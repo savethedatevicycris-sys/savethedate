@@ -3182,6 +3182,8 @@ function setupIntroStatueVideoLoop() {
   let crisStartPending = false;
   let vicStartRequestId = 0;
   let crisStartRequestId = 0;
+  let cycleRestartPending = false;
+  let cycleRestartTimerId = 0;
   let crisPreviewReady = Boolean(
     crisPreview instanceof HTMLElement
     && crisPreview.style.backgroundImage
@@ -3325,6 +3327,15 @@ function setupIntroStatueVideoLoop() {
       ? vicStartPending
       : (video === crisVideo ? crisStartPending : false)
   );
+
+  const clearCycleRestartTimer = () => {
+    if (!cycleRestartTimerId) {
+      return;
+    }
+
+    window.clearTimeout(cycleRestartTimerId);
+    cycleRestartTimerId = 0;
+  };
 
   const playFromTime = (video, time) => {
     applyPlaybackDefaults(video);
@@ -3527,12 +3538,64 @@ function setupIntroStatueVideoLoop() {
     && !document.body.classList.contains("is-locked")
   );
 
+  const hasCrisReachedLoopEnd = () => {
+    if (!Number.isFinite(crisVideo.duration) || crisVideo.duration <= 0) {
+      return false;
+    }
+
+    return crisVideo.currentTime >= Math.max(0, crisVideo.duration - 0.12);
+  };
+
+  const scheduleCycleRestart = () => {
+    if (cycleRestartPending) {
+      return;
+    }
+
+    cycleRestartPending = true;
+    clearCycleRestartTimer();
+    invalidatePendingStartRequest(vicVideo);
+    invalidatePendingStartRequest(crisVideo);
+    safePause(vicVideo);
+    freezeAtEnd(crisVideo);
+
+    cycleRestartTimerId = window.setTimeout(() => {
+      cycleRestartTimerId = 0;
+      cycleRestartPending = false;
+
+      if (!shouldRun()) {
+        resetCycle();
+        return;
+      }
+
+      beginVicCycle();
+    }, 120);
+  };
+
+  const maybeRestartAfterCris = () => {
+    if (
+      !cycleRunning
+      || activePhase !== "both"
+      || crisNeedsRestart
+      || cycleRestartPending
+    ) {
+      return;
+    }
+
+    if (!hasCrisReachedLoopEnd()) {
+      return;
+    }
+
+    scheduleCycleRestart();
+  };
+
   const resetCycle = () => {
     cycleRunning = false;
     activePhase = "vic-only";
     vicEndedInCycle = false;
     vicNeedsRestart = true;
     crisNeedsRestart = true;
+    cycleRestartPending = false;
+    clearCycleRestartTimer();
     invalidatePendingStartRequest(vicVideo);
     invalidatePendingStartRequest(crisVideo);
     freezeAtStart(vicVideo);
@@ -3545,6 +3608,8 @@ function setupIntroStatueVideoLoop() {
     vicEndedInCycle = false;
     vicNeedsRestart = true;
     crisNeedsRestart = true;
+    cycleRestartPending = false;
+    clearCycleRestartTimer();
     invalidatePendingStartRequest(vicVideo);
     invalidatePendingStartRequest(crisVideo);
     freezeAtStart(vicVideo);
@@ -3575,6 +3640,10 @@ function setupIntroStatueVideoLoop() {
 
     if (!cycleRunning) {
       beginVicCycle();
+      return;
+    }
+
+    if (cycleRestartPending) {
       return;
     }
 
@@ -3638,7 +3707,7 @@ function setupIntroStatueVideoLoop() {
       return;
     }
 
-    beginVicCycle();
+    scheduleCycleRestart();
   };
 
   const updateSectionVisibility = (nextVisible) => {
@@ -3690,6 +3759,8 @@ function setupIntroStatueVideoLoop() {
 
   vicVideo.addEventListener("timeupdate", maybeStartCris);
   vicVideo.addEventListener("ended", handleVicEnded);
+  crisVideo.addEventListener("timeupdate", maybeRestartAfterCris);
+  crisVideo.addEventListener("pause", maybeRestartAfterCris);
   crisVideo.addEventListener("ended", handleCrisEnded);
   crisVideo.addEventListener("playing", () => {
     setCrisPreviewVisible(false);
