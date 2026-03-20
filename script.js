@@ -3176,7 +3176,12 @@ function setupIntroStatueVideoLoop() {
   let cycleRunning = false;
   let activePhase = "vic-only";
   let vicEndedInCycle = false;
-  let crisEndedInCycle = false;
+  let vicNeedsRestart = true;
+  let crisNeedsRestart = true;
+  let vicStartPending = false;
+  let crisStartPending = false;
+  let vicStartRequestId = 0;
+  let crisStartRequestId = 0;
   let crisPreviewReady = Boolean(
     crisPreview instanceof HTMLElement
     && crisPreview.style.backgroundImage
@@ -3208,12 +3213,7 @@ function setupIntroStatueVideoLoop() {
       return;
     }
 
-    const playAttempt = video.play();
-    if (playAttempt && typeof playAttempt.catch === "function") {
-      playAttempt.catch(() => {
-        // Reintentamos al siguiente cambio de visibilidad o interaccion.
-      });
-    }
+    queuePlayAttempt(video);
   };
 
   const getVicTriggerTime = () => {
@@ -3252,6 +3252,128 @@ function setupIntroStatueVideoLoop() {
     } catch (_error) {
       // Algunos navegadores bloquean el seek antes de tener metadata.
     }
+  };
+
+  const isCurrentTimeNear = (video, time, tolerance = 0.08) => (
+    Number.isFinite(video.currentTime)
+    && Math.abs(video.currentTime - time) <= tolerance
+  );
+
+  const queuePlayAttempt = (video) => {
+    const playAttempt = video.play();
+    if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.catch(() => {
+        // Reintentamos al siguiente cambio de visibilidad o interaccion.
+      });
+    }
+  };
+
+  const beginPendingStartRequest = (video) => {
+    if (video === vicVideo) {
+      vicStartRequestId += 1;
+      vicStartPending = true;
+      return vicStartRequestId;
+    }
+
+    if (video === crisVideo) {
+      crisStartRequestId += 1;
+      crisStartPending = true;
+      return crisStartRequestId;
+    }
+
+    return 0;
+  };
+
+  const invalidatePendingStartRequest = (video) => {
+    if (video === vicVideo) {
+      vicStartRequestId += 1;
+      vicStartPending = false;
+      return;
+    }
+
+    if (video === crisVideo) {
+      crisStartRequestId += 1;
+      crisStartPending = false;
+    }
+  };
+
+  const isPendingStartRequestCurrent = (video, requestId) => {
+    if (video === vicVideo) {
+      return vicStartPending && vicStartRequestId === requestId;
+    }
+
+    if (video === crisVideo) {
+      return crisStartPending && crisStartRequestId === requestId;
+    }
+
+    return false;
+  };
+
+  const clearPendingStartRequest = (video, requestId) => {
+    if (video === vicVideo && vicStartRequestId === requestId) {
+      vicStartPending = false;
+      return;
+    }
+
+    if (video === crisVideo && crisStartRequestId === requestId) {
+      crisStartPending = false;
+    }
+  };
+
+  const isStartPending = (video) => (
+    video === vicVideo
+      ? vicStartPending
+      : (video === crisVideo ? crisStartPending : false)
+  );
+
+  const playFromTime = (video, time) => {
+    applyPlaybackDefaults(video);
+
+    const targetTime = Math.max(0, Number.isFinite(time) ? time : 0);
+    const shouldSeekBeforePlay = video.ended || !isCurrentTimeNear(video, targetTime);
+
+    if (!shouldSeekBeforePlay) {
+      if (!video.paused) {
+        return;
+      }
+
+      queuePlayAttempt(video);
+      return;
+    }
+
+    safePause(video);
+    const requestId = beginPendingStartRequest(video);
+
+    let didAttemptPlay = false;
+    const attemptPlay = () => {
+      if (didAttemptPlay || !isPendingStartRequestCurrent(video, requestId)) {
+        return;
+      }
+
+      didAttemptPlay = true;
+      clearPendingStartRequest(video, requestId);
+
+      if (!shouldRun()) {
+        return;
+      }
+
+      queuePlayAttempt(video);
+    };
+
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      video.addEventListener("seeked", attemptPlay, { once: true });
+      setCurrentTimeSafely(video, targetTime);
+      window.setTimeout(attemptPlay, 140);
+      return;
+    }
+
+    video.addEventListener("loadedmetadata", () => {
+      setCurrentTimeSafely(video, targetTime);
+      window.setTimeout(attemptPlay, 60);
+    }, { once: true });
+
+    setCurrentTimeSafely(video, targetTime);
+    window.setTimeout(attemptPlay, 240);
   };
 
   const setCrisPreviewVisible = (isVisible) => {
@@ -3409,7 +3531,10 @@ function setupIntroStatueVideoLoop() {
     cycleRunning = false;
     activePhase = "vic-only";
     vicEndedInCycle = false;
-    crisEndedInCycle = false;
+    vicNeedsRestart = true;
+    crisNeedsRestart = true;
+    invalidatePendingStartRequest(vicVideo);
+    invalidatePendingStartRequest(crisVideo);
     freezeAtStart(vicVideo);
     freezeAtStart(crisVideo);
   };
@@ -3418,14 +3543,17 @@ function setupIntroStatueVideoLoop() {
     cycleRunning = true;
     activePhase = "vic-only";
     vicEndedInCycle = false;
-    crisEndedInCycle = false;
+    vicNeedsRestart = true;
+    crisNeedsRestart = true;
+    invalidatePendingStartRequest(vicVideo);
+    invalidatePendingStartRequest(crisVideo);
     freezeAtStart(vicVideo);
     freezeAtStart(crisVideo);
     refreshPlayback();
   };
 
   const maybeStartCris = () => {
-    if (!cycleRunning || activePhase !== "vic-only" || vicEndedInCycle || crisEndedInCycle) {
+    if (!cycleRunning || activePhase !== "vic-only" || vicEndedInCycle) {
       return;
     }
 
@@ -3434,6 +3562,7 @@ function setupIntroStatueVideoLoop() {
     }
 
     activePhase = "both";
+    crisNeedsRestart = true;
     freezeAtStart(crisVideo);
     refreshPlayback();
   };
@@ -3454,6 +3583,11 @@ function setupIntroStatueVideoLoop() {
 
       if (vicEndedInCycle) {
         freezeAtEnd(vicVideo);
+      } else if (vicNeedsRestart) {
+        vicNeedsRestart = false;
+        playFromTime(vicVideo, 0);
+      } else if (isStartPending(vicVideo)) {
+        return;
       } else {
         safePlay(vicVideo);
       }
@@ -3461,22 +3595,23 @@ function setupIntroStatueVideoLoop() {
       return;
     }
 
-    if (vicEndedInCycle && crisEndedInCycle) {
-      beginVicCycle();
-      return;
-    }
-
     if (vicEndedInCycle) {
       freezeAtEnd(vicVideo);
-    } else {
+    } else if (vicNeedsRestart) {
+      vicNeedsRestart = false;
+      playFromTime(vicVideo, 0);
+    } else if (!isStartPending(vicVideo)) {
       safePlay(vicVideo);
     }
 
-    if (crisEndedInCycle) {
-      setCrisPreviewVisible(false);
-      freezeAtEnd(crisVideo);
-    } else {
+    setCrisPreviewVisible(false);
+    if (crisNeedsRestart) {
+      crisNeedsRestart = false;
+      playFromTime(crisVideo, getPreviewTime(crisVideo, crisPreviewSeconds));
+    } else if (!isStartPending(crisVideo)) {
       safePlay(crisVideo);
+    } else {
+      return;
     }
   };
 
@@ -3491,11 +3626,7 @@ function setupIntroStatueVideoLoop() {
 
     if (activePhase === "vic-only") {
       activePhase = "both";
-    }
-
-    if (crisEndedInCycle) {
-      beginVicCycle();
-      return;
+      crisNeedsRestart = true;
     }
 
     refreshPlayback();
@@ -3507,15 +3638,7 @@ function setupIntroStatueVideoLoop() {
       return;
     }
 
-    crisEndedInCycle = true;
-    freezeAtEnd(crisVideo);
-
-    if (vicEndedInCycle) {
-      beginVicCycle();
-      return;
-    }
-
-    refreshPlayback();
+    beginVicCycle();
   };
 
   const updateSectionVisibility = (nextVisible) => {
