@@ -1,16 +1,34 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title>Vic &amp; Cris | Invitación</title>
-  <meta name="description" content="Invitación de boda de Vic &amp; Cris en un palacete clásico.">
+  <!-- Open Graph (WhatsApp, iMessage, etc.) -->
+  <meta property="og:title" content="Vic & Cris – Save the Date">
+  <meta property="og:description" content="Invitación de boda en un palacete clásico.">
+  <meta property="og:image" content="https://savethedatevicycris-sys.github.io/savedate/assets/preview.jpg">
+  <meta property="og:url" content="https://savethedatevicycris-sys.github.io/savedate/">
+  <meta property="og:type" content="website">
+
+  <!-- Para iPhone / Apple -->
+  <meta name="apple-mobile-web-app-title" content="Vic & Cris">
+
+  <!-- Twitter (opcional pero recomendado) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Vic & Cris – Save the Date">
+  <meta name="twitter:description" content="Invitación de boda en un palacete clásico.">
+  <meta name="twitter:image" content="https://savethedatevicycris-sys.github.io/savedate/assets/preview.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&amp;family=Great+Vibes&amp;display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&amp;family=Great+Vibes&amp;display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script defer src="script.js"></script>
 </head>
+
 <body class="page-index is-locked theme-light">
   <div id="petals-overlay" aria-hidden="true"></div>
   <div id="handCursor" aria-hidden="true"></div>
@@ -31,21 +49,18 @@
           <img class="gate-frame is-visible" data-frame="closed" src="assets/gate/envelope-closed.png" alt="">
           <img class="gate-frame" data-frame="opening" src="assets/gate/envelope-opening.png" alt="">
           <img class="gate-frame" data-frame="open" src="assets/gate/envelope-open.png" alt="">
-          <button
-            id="gateSealHitArea"
-            class="gate-seal-hit-area"
-            type="button"
-            aria-label="Abrir sobre"
-            aria-describedby="gateSealTooltip"
-          ></button>
+          <button id="gateSealHitArea" class="gate-seal-hit-area" type="button" aria-label="Abrir sobre"
+            aria-describedby="gateSealTooltip"></button>
           <div id="gateSealHint" class="gate-seal-hint" aria-hidden="true">
-            <div id="gateSealTooltip" class="gate-tooltip open-tooltip" role="tooltip" aria-hidden="true">PULSA AQUÍ PARA ABRIR EL SOBRE</div>
+            <div id="gateSealTooltip" class="gate-tooltip open-tooltip" role="tooltip" aria-hidden="true">PULSA AQUÍ
+              PARA ABRIR EL SOBRE</div>
           </div>
         </div>
       </div>
 
       <div class="gate-actions">
-        <button class="gate-hint gate-hint-secondary gate-audio-trigger" id="audioHint" type="button">ACTIVA EL SONIDO PARA ESCUCHAR EL PERGAMINO</button>
+        <button class="gate-hint gate-hint-secondary gate-audio-trigger" id="audioHint" type="button">ACTIVA EL SONIDO
+          PARA ESCUCHAR EL PERGAMINO</button>
       </div>
     </section>
   </div>
@@ -53,19 +68,12 @@
   <audio id="paperAudio" preload="auto" playsinline>
     <source src="assets/audio/paper-crinkle.mp3" type="audio/mpeg">
   </audio>
-  <audio
-    id="ambientAudio"
-    src="assets/audio/ambient-scroll.mp3"
-    loop
-    preload="auto"
-    playsinline
-    hidden
-  ></audio>
+  <audio id="ambientAudio" src="assets/audio/ambient-scroll.mp3" loop preload="auto" playsinline hidden></audio>
 
   <main id="mainContent" class="site" hidden>
     <header class="hero" id="inicio">
       <div class="hero-video" aria-hidden="true">
-        <video id="heroVideo" muted loop playsinline preload="auto" poster="assets/gallery/palace-main.jpg">
+        <video id="heroVideo" muted playsinline preload="auto" poster="assets/gallery/palace-main.jpg">
           <source src="assets/gallery/Save%20the%20date%20-%20video.mp4" type="video/mp4">
         </video>
       </div>
@@ -73,14 +81,8 @@
 
       <div class="hero-inner container">
         <div class="burger-nav" id="burgerNav">
-          <button
-            class="burger-toggle"
-            id="burgerToggle"
-            type="button"
-            aria-label="Abrir menú"
-            aria-expanded="false"
-            aria-controls="burgerMenuPanel"
-          >
+          <button class="burger-toggle" id="burgerToggle" type="button" aria-label="Abrir menú" aria-expanded="false"
+            aria-controls="burgerMenuPanel">
             <span class="burger-toggle-icon" aria-hidden="true">
               <span class="burger-toggle-line"></span>
               <span class="burger-toggle-line"></span>
@@ -101,20 +103,15 @@
         </div>
       </div>
       <div class="hero-bottom-frame" aria-hidden="true">
-        <img
-          src="assets/gallery/marco_inferior_cabezal.png"
-          alt=""
-          loading="eager"
-          decoding="async"
-          draggable="false"
-        >
+        <img src="assets/gallery/marco_inferior_cabezal.png" alt="" loading="eager" decoding="async" draggable="false">
       </div>
     </header>
 
     <section class="section container title-card" id="titleCard" aria-label="Tarjeta de título" data-reveal>
       <div class="card">
         <div class="title-card-media">
-          <img id="titleCardImage" src="assets/gallery/hiedras_loop_frames/frame_00.png" alt="Vic & Cris" class="title-card-img" loading="eager" draggable="false">
+          <img id="titleCardImage" src="assets/gallery/hiedras_loop_frames/frame_00.png" alt="Vic & Cris"
+            class="title-card-img" loading="eager" draggable="false">
           <canvas id="titleCardWritingCanvas" class="title-card-writing-canvas" aria-hidden="true"></canvas>
         </div>
       </div>
@@ -123,50 +120,31 @@
     <section class="section container intro-section" id="bienvenida" data-reveal>
       <figure class="welcome-letter invite">
         <div class="invite__float">
-          <img id="welcomeLetterImage" class="invite-img invite__img" src="assets/gallery/nuestro-dia-mas-especial.png" alt="Carta manuscrita: Nuestro día más especial" loading="lazy">
+          <img id="welcomeLetterImage" class="invite-img invite__img" src="assets/gallery/nuestro-dia-mas-especial.png"
+            alt="Carta manuscrita: Nuestro día más especial" loading="lazy">
           <div class="invite-candle-flames" aria-hidden="true">
             <span class="invite-flame invite-flame--one"></span>
             <span class="invite-flame invite-flame--two"></span>
             <span class="invite-flame invite-flame--three"></span>
             <span class="invite-flame invite-flame--four"></span>
           </div>
-          <button id="welcomeLetterMagnifierHandle"
-                  class="magnifier-handle"
-                  type="button"
-                  aria-label="Mueve el cursor o arrastra para ampliar">🔍</button>
-          <div id="welcomeLetterMagnifier"
-               class="magnifier"
-               aria-hidden="true">
-            <div class="magnifier-glass"></div>
-          </div>
         </div>
       </figure>
     </section>
 
-    <section class="section container intro-photos-section" id="bienvenidaFotos" aria-label="Fotografías de Vic y Cris" data-reveal>
+    <section class="section container intro-photos-section" id="bienvenidaFotos" aria-label="Fotografías de Vic y Cris"
+      data-reveal>
       <div class="couple-photos">
         <figure class="couple-photo-card couple-photo-card--video">
           <div class="couple-photo-window">
-            <video
-              id="introVideoVic"
-              muted
-              playsinline
-              preload="auto"
-              aria-label="Video estatua de Vic"
-            >
+            <video id="introVideoVic" muted playsinline preload="auto" aria-label="Video estatua de Vic">
               <source src="assets/gallery/Video%20estatua%20Vic.mp4" type="video/mp4">
             </video>
           </div>
         </figure>
         <figure class="couple-photo-card couple-photo-card--video">
           <div class="couple-photo-window">
-            <video
-              id="introVideoCris"
-              muted
-              playsinline
-              preload="auto"
-              aria-label="Video estatua de Cris"
-            >
+            <video id="introVideoCris" muted playsinline preload="auto" aria-label="Video estatua de Cris">
               <source src="assets/gallery/Video%20estatua%20Cris.mp4" type="video/mp4">
             </video>
           </div>
@@ -174,36 +152,47 @@
       </div>
     </section>
 
-    <section class="section container love-story-section" id="nuestraHistoria" aria-label="Nuestra historia" data-reveal>
+    <section class="section container love-story-section" id="nuestraHistoria" aria-label="Nuestra historia"
+      data-reveal>
       <h2 class="love-story-title">Nuestra historia</h2>
       <div class="love-story-copy">
         <p>Hay historias de amor que nacen donde todo el mundo las espera. Y luego está la nuestra.</p>
-        <button class="love-story-toggle" type="button" id="loveStoryToggle" aria-expanded="false" aria-controls="loveStoryExtended">Leer más</button>
+        <button class="love-story-toggle" type="button" id="loveStoryToggle" aria-expanded="false"
+          aria-controls="loveStoryExtended">Leer más</button>
         <div class="love-story-extended" id="loveStoryExtended" hidden>
-          <p>Cris y Vic se conocieron por Tinder en plena post pandemia, entre restricciones e incertidumbre. Un martes 29 de septiembre de 2020, justo cuando todo invitaba a la distancia, apareció una conexión que sintieron ambos desde el primer momento.</p>
+          <p>Cris y Vic se conocieron por Tinder en plena post pandemia, entre restricciones e incertidumbre. Un martes
+            29 de septiembre de 2020, justo cuando todo invitaba a la distancia, apareció una conexión que sintieron
+            ambos desde el primer momento.</p>
           <p>Donde nadie imaginaba que podía surgir el amor, surgió el nuestro.</p>
-          <p>La música nos unió para siempre. Entre canciones, sesiones, techno, risas y conversaciones interminables, dos almas melómanas se encontraron para compartir su locura bonita. Casi sin darnos cuenta, pasamos de conocernos a querer pasar todo el tiempo posible juntos.</p>
+          <p>La música nos unió para siempre. Entre canciones, sesiones, techno, risas y conversaciones interminables,
+            dos almas melómanas se encontraron para compartir su locura bonita. Casi sin darnos cuenta, pasamos de
+            conocernos a querer pasar todo el tiempo posible juntos.</p>
           <p>Y así, día a día, fuimos construyendo algo muy especial.</p>
-          <p>El 6 de marzo de 2021, en el Monasterio de Piedra, nos comprometimos. Desde entonces, hemos soñado con este momento: celebrar nuestra boda rodeados de las personas que más queremos.</p>
-          <p>Porque, aunque esta boda será una reconfirmación de nuestro amor ante todos vosotros, ese amor ya lo vivimos cada día: en nuestra rutina, en nuestras risas, en nuestros planes y en nuestro pequeño gran compañero de aventuras, nuestro pomerania Tris, que llena nuestra casa de alegría (y de personalidad).</p>
-          <p>Para nosotros, esta boda no es solo una celebración: es un “sí” rodeado de nuestra gente, de quienes han formado parte de nuestra historia y de quienes queremos que sigan formando parte de nuestro futuro.</p>
-          <p>Además, este fin de semana será todavía más especial, porque el domingo 27/06/2027, justo después de la boda, Cris cumple 30 años. Así que celebraremos el amor… y también la vida.</p>
-          <p>Después de la boda, nuestro próximo gran sueño será construir nuestro hogar. Por eso, cualquier ayuda o aportación que queráis hacernos será recibida con muchísima ilusión y agradecimiento. Para quienes lo prefiráis, habrá sobres disponibles en la boda.</p>
-          <p>Pero, por encima de todo, lo más importante para nosotros es que estéis ahí. Vuestra presencia significa muchísimo.</p>
-          <p>Gracias por acompañarnos, por querernos y por formar parte de este momento tan importante. Estamos deseando celebrarlo con vosotros.</p>
+          <p>El 6 de marzo de 2021, en el Monasterio de Piedra, nos comprometimos. Desde entonces, hemos soñado con este
+            momento: celebrar nuestra boda rodeados de las personas que más queremos.</p>
+          <p>Porque, aunque esta boda será una reconfirmación de nuestro amor ante todos vosotros, ese amor ya lo
+            vivimos cada día: en nuestra rutina, en nuestras risas, en nuestros planes y en nuestro pequeño gran
+            compañero de aventuras, nuestro pomerania Tris, que llena nuestra casa de alegría (y de personalidad).</p>
+          <p>Para nosotros, esta boda no es solo una celebración: es un “sí” rodeado de nuestra gente, de quienes han
+            formado parte de nuestra historia y de quienes queremos que sigan formando parte de nuestro futuro.</p>
+          <p>Además, este fin de semana será todavía más especial, porque el domingo 27/06/2027, justo después de la
+            boda, Cris cumple 30 años. Así que celebraremos el amor… y también la vida.</p>
+          <p>Después de la boda, nuestro próximo gran sueño será construir nuestro hogar. Por eso, cualquier ayuda o
+            aportación que queráis hacernos será recibida con muchísima ilusión y agradecimiento. Para quienes lo
+            prefiráis, habrá sobres disponibles en la boda.</p>
+          <p>Pero, por encima de todo, lo más importante para nosotros es que estéis ahí. Vuestra presencia significa
+            muchísimo.</p>
+          <p>Gracias por acompañarnos, por querernos y por formar parte de este momento tan importante. Estamos deseando
+            celebrarlo con vosotros.</p>
         </div>
       </div>
     </section>
 
     <section class="container decor-media-block decor-media-block--stopwatch" aria-hidden="true">
       <div class="countdown-stopwatch-animated">
-        <img
-          id="countdownStopwatch"
+        <img id="countdownStopwatch"
           class="decor-media-image decor-media-image--stopwatch reveal-from-behind countdown-stopwatch countdown-deco-stopwatch countdown-stopwatch-image"
-          src="assets/gallery/stopwatch.png"
-          alt=""
-          loading="lazy"
-        >
+          src="assets/gallery/stopwatch.png" alt="" loading="lazy">
         <span id="countdownStopwatchSecondHand" class="countdown-stopwatch-second-hand" aria-hidden="true"></span>
       </div>
     </section>
@@ -215,19 +204,23 @@
           <h2>Falta poco para celebrarlo juntos</h2>
           <div class="countdown-grid" id="countdown" role="timer" aria-live="polite">
             <article class="count-card">
-              <span class="count-value" data-unit="days" data-value="00"><span class="count-digit stable">00</span></span>
+              <span class="count-value" data-unit="days" data-value="00"><span
+                  class="count-digit stable">00</span></span>
               <small>Días</small>
             </article>
             <article class="count-card">
-              <span class="count-value" data-unit="hours" data-value="00"><span class="count-digit stable">00</span></span>
+              <span class="count-value" data-unit="hours" data-value="00"><span
+                  class="count-digit stable">00</span></span>
               <small>Horas</small>
             </article>
             <article class="count-card">
-              <span class="count-value" data-unit="minutes" data-value="00"><span class="count-digit stable">00</span></span>
+              <span class="count-value" data-unit="minutes" data-value="00"><span
+                  class="count-digit stable">00</span></span>
               <small>Minutos</small>
             </article>
             <article class="count-card">
-              <span class="count-value" data-unit="seconds" data-value="00"><span class="count-digit stable">00</span></span>
+              <span class="count-value" data-unit="seconds" data-value="00"><span
+                  class="count-digit stable">00</span></span>
               <small>Segundos</small>
             </article>
           </div>
@@ -237,7 +230,8 @@
 
     <section class="container decor-media-block decor-media-block--carriages" aria-hidden="true">
       <div class="carriages-lantern-scene">
-        <img class="decor-media-image decor-media-image--carriages reveal-from-behind location-deco-carriages" src="assets/gallery/carriages-row-tight.png" alt="" loading="lazy">
+        <img class="decor-media-image decor-media-image--carriages reveal-from-behind location-deco-carriages"
+          src="assets/gallery/carriages-row-tight.png" alt="" loading="lazy">
         <div class="invite-candle-flames invite-candle-flames--carriages" aria-hidden="true">
           <span class="invite-flame invite-flame--carriage-one"></span>
           <span class="invite-flame invite-flame--carriage-two"></span>
@@ -254,7 +248,8 @@
         <p class="address" id="venueAddress">Calle Alcalá, 65, C. Miguel de Cervantes, 11, 28511 Valdilecha, Madrid</p>
 
         <div class="actions-row">
-          <a class="btn btn-secondary" id="mapsLink" href="https://maps.app.goo.gl/fYbpdiKATBsvNCby6" target="_blank" rel="noopener">Ver en Google Maps</a>
+          <a class="btn btn-secondary" id="mapsLink" href="https://maps.app.goo.gl/fYbpdiKATBsvNCby6" target="_blank"
+            rel="noopener">Ver en Google Maps</a>
           <button class="btn btn-ghost" type="button" data-copy-key="eventAddress">Copiar dirección</button>
         </div>
       </div>
@@ -262,7 +257,8 @@
 
     <section class="container decor-media-block decor-media-block--program-centerpiece" aria-hidden="true">
       <div class="decor-media-program-centerpiece invite">
-        <img class="decor-media-image decor-media-image--program-centerpiece reveal-from-behind" src="assets/gallery/centro-mesa-programa.png" alt="" loading="lazy">
+        <img class="decor-media-image decor-media-image--program-centerpiece reveal-from-behind"
+          src="assets/gallery/centro-mesa-programa.png" alt="" loading="lazy">
         <div class="invite-candle-flames invite-candle-flames--program" aria-hidden="true">
           <span class="invite-flame invite-flame--program-one"></span>
           <span class="invite-flame invite-flame--program-two"></span>
@@ -277,33 +273,27 @@
     <section class="section container" id="programa" data-reveal>
       <p class="section-kicker">Programa</p>
       <h2>Horario de la jornada</h2>
-      <div
-        class="program-carousel-shell"
-        id="programCarousel"
-        tabindex="0"
-        aria-label="Carrusel del horario del fin de semana"
-        aria-roledescription="carrusel"
-      >
+      <div class="program-carousel-shell" id="programCarousel" tabindex="0"
+        aria-label="Carrusel del horario del fin de semana" aria-roledescription="carrusel">
         <div class="program-carousel-stage">
-          <button class="program-carousel-nav program-carousel-nav--prev" id="programCarouselPrev" type="button" aria-label="Ver apartado anterior">‹</button>
+          <button class="program-carousel-nav program-carousel-nav--prev" id="programCarouselPrev" type="button"
+            aria-label="Ver apartado anterior">‹</button>
           <div class="program-carousel-viewport">
             <div class="program-carousel-track" id="programCarouselTrack"></div>
           </div>
-          <button class="program-carousel-nav program-carousel-nav--next" id="programCarouselNext" type="button" aria-label="Ver apartado siguiente">›</button>
+          <button class="program-carousel-nav program-carousel-nav--next" id="programCarouselNext" type="button"
+            aria-label="Ver apartado siguiente">›</button>
         </div>
         <p class="program-carousel-counter" id="programCarouselCounter" aria-live="polite"></p>
       </div>
     </section>
 
-    <section class="section container gift-image-section gift-image-section--guest-stay" id="regalo-invitados" data-reveal aria-labelledby="guestStayGiftTitle">
+    <section class="section container gift-image-section gift-image-section--guest-stay" id="regalo-invitados"
+      data-reveal aria-labelledby="guestStayGiftTitle">
       <h2 class="sr-only" id="guestStayGiftTitle">Regalo para los invitados</h2>
-      <img
-        class="gift-floating-image gift-floating-image--guest-stay"
-        src="assets/gallery/regalo_para_invitados.png"
+      <img class="gift-floating-image gift-floating-image--guest-stay" src="assets/gallery/regalo_para_invitados.png"
         alt="Nuestro regalo para vosotros: una noche en el palacete, por nuestra cuenta. La estancia de una noche para la persona invitada y sus acompa&ntilde;antes en este d&iacute;a. Queremos que os olvid&eacute;is de todo, sobre todo de conducir, y disfrut&eacute;is la experiencia al m&aacute;ximo."
-        loading="lazy"
-        decoding="async"
-      />
+        loading="lazy" decoding="async" />
     </section>
 
     <section class="section container" id="alojamiento" data-reveal>
@@ -312,18 +302,26 @@
 
       <article class="palace-card">
         <figure class="palace-media">
-          <img id="palaceImage" src="assets/gallery/habitaciones_palacete.jpg" alt="Vista principal del palacete" loading="lazy">
+          <img id="palaceImage" src="assets/gallery/habitaciones_palacete.jpg" alt="Vista principal del palacete"
+            loading="lazy">
         </figure>
 
         <div class="palace-content">
           <h3 id="venueName">Hotel Palacete De La Ochava</h3>
-          <p class="palace-address" id="venueAddressCard">Calle Alcalá, 65, C. Miguel de Cervantes, 11, 28511 Valdilecha, Madrid</p>
+          <p class="palace-address" id="venueAddressCard">Calle Alcalá, 65, C. Miguel de Cervantes, 11, 28511
+            Valdilecha, Madrid</p>
           <p class="palace-stay-note">
-            El alojamiento y la estancia en el hotel desde las 15:00h del s&aacute;bado 26 de junio del 2027 hasta las 14:00h del domingo 27 de junio del 2027 es completamente <strong>GRATUITA</strong>. Recibir&eacute;is la llave de vuestra habitaci&oacute;n en la recepci&oacute;n del hotel. Cada habitaci&oacute;n tiene asignados los invitados.
+            El alojamiento y la estancia en el hotel desde las 15:00h del s&aacute;bado 26 de junio del 2027 hasta las
+            14:00h del domingo 27 de junio del 2027 es completamente <strong>GRATUITA</strong>. Recibir&eacute;is la
+            llave de vuestra habitaci&oacute;n en la recepci&oacute;n del hotel. Cada habitaci&oacute;n tiene asignados
+            los invitados.
           </p>
           <div class="actions-row">
-            <a class="btn btn-secondary" id="palaceWebsiteLink" href="https://www.hotelpalaceteochava.com/el-palacete-de-la-ochava/#hotel" target="_blank" rel="noopener">Ver habitaciones / web del palacete</a>
-            <a class="btn btn-ghost" id="palaceMapsLink" href="https://maps.app.goo.gl/fYbpdiKATBsvNCby6" target="_blank" rel="noopener">Cómo llegar</a>
+            <a class="btn btn-secondary" id="palaceWebsiteLink"
+              href="https://www.hotelpalaceteochava.com/el-palacete-de-la-ochava/#hotel" target="_blank"
+              rel="noopener">Ver habitaciones / web del palacete</a>
+            <a class="btn btn-ghost" id="palaceMapsLink" href="https://maps.app.goo.gl/fYbpdiKATBsvNCby6"
+              target="_blank" rel="noopener">Cómo llegar</a>
           </div>
         </div>
       </article>
@@ -334,9 +332,11 @@
       <h2>El lugar</h2>
       <p class="muted">Espacios del palacete y alrededores.</p>
       <div class="gallery-float-stage">
-        <button class="gallery-float-nav gallery-float-nav--prev" id="galleryCarouselPrev" type="button" aria-label="Ver imagen anterior">‹</button>
+        <button class="gallery-float-nav gallery-float-nav--prev" id="galleryCarouselPrev" type="button"
+          aria-label="Ver imagen anterior">‹</button>
         <div class="gallery-grid gallery-grid--floating" id="galleryGrid" aria-live="polite"></div>
-        <button class="gallery-float-nav gallery-float-nav--next" id="galleryCarouselNext" type="button" aria-label="Ver imagen siguiente">›</button>
+        <button class="gallery-float-nav gallery-float-nav--next" id="galleryCarouselNext" type="button"
+          aria-label="Ver imagen siguiente">›</button>
       </div>
       <p class="gallery-float-counter" id="galleryCarouselCounter" aria-live="polite"></p>
       <p class="gallery-float-caption" id="galleryCarouselCaption"></p>
@@ -347,21 +347,11 @@
       <h2>Servicios en el palacete</h2>
       <p class="muted">Pulsa en cada servicio para ver m&aacute;s detalles, im&aacute;genes y datos de contacto.</p>
       <div class="services-carousel-stage" id="servicesCarouselStage" aria-label="Carrusel de servicios extra">
-        <button
-          class="service-carousel-nav service-carousel-nav--prev"
-          id="servicesCarouselPrev"
-          type="button"
-          aria-label="Ver servicio anterior"
-          hidden
-        >‹</button>
+        <button class="service-carousel-nav service-carousel-nav--prev" id="servicesCarouselPrev" type="button"
+          aria-label="Ver servicio anterior" hidden>‹</button>
         <div class="services-grid" id="servicesGrid"></div>
-        <button
-          class="service-carousel-nav service-carousel-nav--next"
-          id="servicesCarouselNext"
-          type="button"
-          aria-label="Ver servicio siguiente"
-          hidden
-        >›</button>
+        <button class="service-carousel-nav service-carousel-nav--next" id="servicesCarouselNext" type="button"
+          aria-label="Ver servicio siguiente" hidden>›</button>
       </div>
       <p class="services-carousel-hint muted" id="servicesCarouselHint" hidden>
         Usa las flechas para moverte entre los 3 servicios.
@@ -370,13 +360,9 @@
 
     <section class="section container gift-image-section" id="regalos" data-reveal aria-labelledby="giftSectionTitle">
       <h2 class="sr-only" id="giftSectionTitle">Regalos para los novios</h2>
-      <img
-        class="gift-floating-image"
-        src="assets/gallery/regalo_boda.png"
+      <img class="gift-floating-image" src="assets/gallery/regalo_boda.png"
         alt="Lo m&aacute;s importante para nosotros es compartir este d&iacute;a con vosotros. Si quer&eacute;is hacernos un regalo, cualquier aportaci&oacute;n para nuestro futuro hogar ser&aacute; recibida con much&iacute;sima ilusi&oacute;n."
-        loading="lazy"
-        decoding="async"
-      />
+        loading="lazy" decoding="async" />
       <div class="gift-mini-grid" aria-label="Opciones para el regalo">
         <article class="gift-mini-card">
           <p>Habrá sobres disponibles durante el evento de la boda para los regalos en efectivo.</p>
@@ -392,11 +378,13 @@
       <h2>Confirmación de asistencia a la boda</h2>
       <p class="muted">Si el formulario no carga, ábrelo en una pestaña nueva.</p>
       <div class="actions-row">
-        <a class="btn btn-secondary" id="rsvpViewLink" href="#" target="_blank" rel="noopener">Abrir formulario de confirmación</a>
+        <a class="btn btn-secondary" id="rsvpViewLink" href="#" target="_blank" rel="noopener">Abrir formulario de
+          confirmación</a>
         <a class="btn btn-primary" href="thanks.html">He enviado mi confirmación</a>
       </div>
       <div class="embed-wrap">
-        <iframe id="rsvpEmbed" title="Formulario de confirmación de asistencia" loading="lazy" src="about:blank" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <iframe id="rsvpEmbed" title="Formulario de confirmación de asistencia" loading="lazy" src="about:blank"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
       </div>
     </section>
 
@@ -408,20 +396,15 @@
         <a class="btn btn-secondary" id="qnaViewLink" href="#" target="_blank" rel="noopener">Abrir en nueva pestaña</a>
       </div>
       <div class="embed-wrap">
-        <iframe id="qnaEmbed" title="Formulario de preguntas para los novios" loading="lazy" src="about:blank" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <iframe id="qnaEmbed" title="Formulario de preguntas para los novios" loading="lazy" src="about:blank"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
       </div>
     </section>
 
     <section class="section container" id="faq" data-reveal>
       <p class="section-kicker">FAQ</p>
       <h2>Preguntas frecuentes</h2>
-      <button
-        class="faq-toggle-btn"
-        id="faqToggleBtn"
-        type="button"
-        aria-expanded="false"
-        aria-controls="faqListWrap"
-      >
+      <button class="faq-toggle-btn" id="faqToggleBtn" type="button" aria-expanded="false" aria-controls="faqListWrap">
         Haz clic aquí para desplegar el listado de preguntas frecuentes
       </button>
       <div class="faq-list-wrap" id="faqListWrap" hidden>
@@ -432,12 +415,8 @@
     <footer class="section signature container" data-reveal>
       <p class="signature-kicker">Con cariño de</p>
       <p class="signature-names gate-title">Vic &amp; Cris</p>
-      <img
-        class="signature-seal"
-        src="assets/gallery/seal-red.png"
-        alt="Sello rojo decorativo de Vic y Cris"
-        loading="lazy"
-      >
+      <img class="signature-seal" src="assets/gallery/seal-red.png" alt="Sello rojo decorativo de Vic y Cris"
+        loading="lazy">
     </footer>
   </main>
 
@@ -451,14 +430,16 @@
         <img id="lightboxImage" src="" alt="">
         <figcaption id="lightboxCaption"></figcaption>
       </figure>
-      <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Imagen siguiente">›</button>
+      <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button"
+        aria-label="Imagen siguiente">›</button>
     </div>
   </aside>
 
   <aside class="service-modal" id="serviceDetailsModal" hidden>
     <div class="service-modal-backdrop" data-service-modal-close></div>
     <div class="service-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="serviceModalTitle">
-      <button class="service-modal-close" id="serviceDetailsClose" type="button" aria-label="Cerrar detalles del servicio">Cerrar</button>
+      <button class="service-modal-close" id="serviceDetailsClose" type="button"
+        aria-label="Cerrar detalles del servicio">Cerrar</button>
       <div class="service-modal-scroll">
         <p class="service-modal-kicker" id="serviceModalKicker">Servicio en el palacete</p>
         <h2 class="service-modal-title" id="serviceModalTitle"></h2>
@@ -473,4 +454,5 @@
 
   <div class="copy-toast" id="copyToast" role="status" aria-live="polite"></div>
 </body>
+
 </html>

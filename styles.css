@@ -1288,8 +1288,8 @@ a:focus-visible {
   background: transparent;
   position: relative;
   overflow: hidden;
-  cursor: zoom-in;
-  touch-action: pan-y;
+  cursor: default;
+  touch-action: pan-y pinch-zoom;
   --handle-size: clamp(220px, 30vw, 420px);
   --glass-size: 32.4%;
   --glass-offset-x: 9.9%;
@@ -1353,6 +1353,7 @@ a:focus-visible {
   border: 0;
   background: transparent;
   box-shadow: none;
+  touch-action: pan-y pinch-zoom;
 }
 
 @keyframes inviteFloat {

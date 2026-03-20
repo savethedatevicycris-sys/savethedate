@@ -271,7 +271,7 @@ const AMBIENT_UNLOCK_EVENT = "ambient-unlock-request";
 const AMBIENT_START_EVENT = "ambient-start-request";
 const HERO_VIDEO_START_EVENT = "hero-video-start-request";
 const HERO_VIDEO_PLAYING_EVENT = "hero-video-playing";
-const HERO_VIDEO_DELAY_AFTER_GATE_CLICK_MS = 7000;
+const HERO_VIDEO_DELAY_AFTER_GATE_CLICK_MS = 6000;
 
 document.addEventListener("DOMContentLoaded", () => {
   // Capa de ambiente global y progreso superior.
@@ -309,7 +309,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupDecorReveal();
   setupInviteMotion();
   setupInviteFlameAlignment();
-  setupWelcomeLetterMagnifier();
   setupLoveStoryToggle();
   setupCopyButtons();
   setupForms();
@@ -2897,151 +2896,283 @@ function setupVideoFallback(videoId, classTarget) {
   }, 1200);
 }
 
+function setupVisibilityDrivenVideoPlayback({
+  video,
+  activationEventName = null,
+  getActivationDelayMs = null,
+  playingEventName = "",
+  threshold = 0.35,
+  rootMargin = "0px 0px -12% 0px"
+}) {
+  if (!(video instanceof HTMLVideoElement)) {
+    return;
+  }
+
+  let activationTimerId = 0;
+  let activationReady = activationEventName === null;
+  let isInViewport = false;
+  let hasBroadcastPlaying = false;
+
+  const clearActivationTimer = () => {
+    if (!activationTimerId) {
+      return;
+    }
+
+    window.clearTimeout(activationTimerId);
+    activationTimerId = 0;
+  };
+
+  const applyPlaybackDefaults = () => {
+    video.loop = false;
+    video.removeAttribute("loop");
+    video.autoplay = false;
+    video.removeAttribute("autoplay");
+    video.defaultPlaybackRate = 1;
+    video.playbackRate = 1;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+  };
+
+  const safePause = () => {
+    if (!video.paused) {
+      video.pause();
+    }
+  };
+
+  const setCurrentTimeSafely = (time) => {
+    try {
+      if (!Number.isFinite(video.currentTime) || Math.abs(video.currentTime - time) > 0.04) {
+        video.currentTime = time;
+      }
+    } catch (_error) {
+      // Algunos navegadores bloquean el seek antes de tener metadata.
+    }
+  };
+
+  const getVideoEndTime = () => {
+    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+      return video.currentTime;
+    }
+
+    return Math.max(0, video.duration - 0.05);
+  };
+
+  const isVideoFinished = () => (
+    video.ended
+    || (Number.isFinite(video.duration) && video.duration > 0 && video.currentTime >= getVideoEndTime())
+  );
+
+  const freezeAtStart = () => {
+    applyPlaybackDefaults();
+    safePause();
+    setCurrentTimeSafely(0);
+  };
+
+  const safePlay = () => {
+    applyPlaybackDefaults();
+
+    if (!video.paused || isVideoFinished()) {
+      return;
+    }
+
+    const playAttempt = video.play();
+    if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.catch(() => {
+        // Reintentamos al siguiente cambio de visibilidad/interaccion.
+      });
+    }
+  };
+
+  const refreshPlayback = () => {
+    if (!activationReady) {
+      freezeAtStart();
+      return;
+    }
+
+    if (!isInViewport) {
+      freezeAtStart();
+      return;
+    }
+
+    if (document.hidden || document.body.classList.contains("is-locked")) {
+      safePause();
+      return;
+    }
+
+    if (isVideoFinished()) {
+      safePause();
+      return;
+    }
+
+    safePlay();
+  };
+
+  const updateViewportState = (nextVisible) => {
+    if (isInViewport === nextVisible) {
+      if (nextVisible) {
+        refreshPlayback();
+      }
+      return;
+    }
+
+    isInViewport = nextVisible;
+
+    if (!isInViewport) {
+      freezeAtStart();
+      return;
+    }
+
+    refreshPlayback();
+  };
+
+  const updateViewportStateFromRect = () => {
+    const rect = video.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+
+    if (rect.width <= 0 || rect.height <= 0 || viewportWidth <= 0 || viewportHeight <= 0) {
+      updateViewportState(false);
+      return;
+    }
+
+    const visibleWidth = Math.max(0, Math.min(rect.right, viewportWidth) - Math.max(rect.left, 0));
+    const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+    const visibleArea = visibleWidth * visibleHeight;
+    const totalArea = rect.width * rect.height;
+    const visibleRatio = totalArea > 0 ? visibleArea / totalArea : 0;
+
+    updateViewportState(visibleRatio >= threshold);
+  };
+
+  const armActivation = () => {
+    const activationDelayMs = typeof getActivationDelayMs === "function"
+      ? Math.max(0, Number(getActivationDelayMs()) || 0)
+      : 0;
+
+    clearActivationTimer();
+    activationReady = false;
+    freezeAtStart();
+
+    if (activationDelayMs <= 0) {
+      activationReady = true;
+      refreshPlayback();
+      return;
+    }
+
+    activationTimerId = window.setTimeout(() => {
+      activationTimerId = 0;
+      activationReady = true;
+      refreshPlayback();
+    }, activationDelayMs);
+  };
+
+  video.addEventListener("loadeddata", refreshPlayback);
+  video.addEventListener("loadedmetadata", refreshPlayback);
+  video.addEventListener("canplay", refreshPlayback);
+  video.addEventListener("ended", refreshPlayback);
+  video.addEventListener("ratechange", () => {
+    if (Math.abs(video.playbackRate - 1) > 0.001) {
+      video.playbackRate = 1;
+    }
+
+    if (Math.abs(video.defaultPlaybackRate - 1) > 0.001) {
+      video.defaultPlaybackRate = 1;
+    }
+  });
+  video.addEventListener("playing", () => {
+    if (playingEventName && !hasBroadcastPlaying) {
+      hasBroadcastPlaying = true;
+      window.dispatchEvent(new CustomEvent(playingEventName));
+    }
+  });
+
+  if (activationEventName) {
+    window.addEventListener(activationEventName, armActivation);
+  }
+
+  document.addEventListener("visibilitychange", refreshPlayback);
+  window.addEventListener("pointerup", refreshPlayback, { passive: true });
+
+  if (typeof window.IntersectionObserver === "function") {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.target !== video) {
+            return;
+          }
+
+          updateViewportState(entry.isIntersecting && entry.intersectionRatio >= threshold);
+        });
+      },
+      {
+        threshold: [0, threshold, 1],
+        rootMargin
+      }
+    );
+
+    observer.observe(video);
+    window.addEventListener("pagehide", () => {
+      observer.disconnect();
+    }, { once: true });
+  } else {
+    updateViewportStateFromRect();
+    window.addEventListener("scroll", updateViewportStateFromRect, { passive: true });
+    window.addEventListener("resize", updateViewportStateFromRect, { passive: true });
+  }
+
+  window.addEventListener("pagehide", clearActivationTimer, { once: true });
+
+  applyPlaybackDefaults();
+  freezeAtStart();
+
+  if (!activationEventName) {
+    refreshPlayback();
+  }
+}
+
 function setupHeroVideoPlayback(videoId) {
   const video = document.getElementById(videoId);
   if (!(video instanceof HTMLVideoElement)) {
     return;
   }
 
-  let startTimerId = 0;
-  let startAllowed = false;
-  let waitingForStart = false;
-  let hasStartedOnce = false;
-  let hasBroadcastPlaying = false;
+  setupVisibilityDrivenVideoPlayback({
+    video,
+    activationEventName: HERO_VIDEO_START_EVENT,
+    getActivationDelayMs: () => {
+      const clickTimestamp = appState.heroVideoGateClickAt;
+      const elapsedSinceClick = clickTimestamp > 0
+        ? (performance.now() - clickTimestamp)
+        : HERO_VIDEO_DELAY_AFTER_GATE_CLICK_MS;
 
-  const clearStartTimer = () => {
-    if (!startTimerId) {
-      return;
-    }
-
-    window.clearTimeout(startTimerId);
-    startTimerId = 0;
-  };
-
-  const freezeAtStart = () => {
-    video.pause();
-
-    try {
-      video.currentTime = 0;
-    } catch (_error) {
-      // Ignorar navegadores que no permiten seek tan pronto.
-    }
-  };
-
-  const startPlayback = () => {
-    video.muted = true;
-    video.defaultMuted = true;
-    video.playsInline = true;
-
-    const playAttempt = video.play();
-    if (playAttempt && typeof playAttempt.catch === "function") {
-      playAttempt.catch(() => {
-        // Reintentamos cuando haya interaccion o al mostrarse el contenido.
-      });
-    } else {
-      hasStartedOnce = true;
-    }
-  };
-
-  const tryStartNow = () => {
-    if (!startAllowed || document.hidden || document.body.classList.contains("is-locked")) {
-      waitingForStart = true;
-      return;
-    }
-
-    waitingForStart = false;
-    window.requestAnimationFrame(() => {
-      startPlayback();
-    });
-  };
-
-  const schedulePlayback = (delayMs = 0) => {
-    clearStartTimer();
-    waitingForStart = true;
-
-    if (delayMs <= 0) {
-      tryStartNow();
-      return;
-    }
-
-    startTimerId = window.setTimeout(() => {
-      startTimerId = 0;
-      tryStartNow();
-    }, delayMs);
-  };
-
-  const armDelayedStart = () => {
-    startAllowed = true;
-    freezeAtStart();
-
-    const clickTimestamp = appState.heroVideoGateClickAt;
-    const elapsedSinceClick = clickTimestamp > 0 ? (performance.now() - clickTimestamp) : HERO_VIDEO_DELAY_AFTER_GATE_CLICK_MS;
-    const remainingDelay = Math.max(0, HERO_VIDEO_DELAY_AFTER_GATE_CLICK_MS - elapsedSinceClick);
-    schedulePlayback(remainingDelay);
-  };
-
-  video.addEventListener("loadeddata", () => {
-    if (startAllowed && waitingForStart && !startTimerId) {
-      tryStartNow();
-    }
+      return Math.max(0, HERO_VIDEO_DELAY_AFTER_GATE_CLICK_MS - elapsedSinceClick);
+    },
+    playingEventName: HERO_VIDEO_PLAYING_EVENT,
+    threshold: 0.26,
+    rootMargin: "0px 0px -10% 0px"
   });
-  video.addEventListener("canplay", () => {
-    if (startAllowed && waitingForStart && !startTimerId) {
-      tryStartNow();
-    }
-  });
-  video.addEventListener("playing", () => {
-    hasStartedOnce = true;
-    waitingForStart = false;
-
-    if (!hasBroadcastPlaying) {
-      hasBroadcastPlaying = true;
-      window.dispatchEvent(new CustomEvent(HERO_VIDEO_PLAYING_EVENT));
-    }
-  });
-  window.addEventListener(HERO_VIDEO_START_EVENT, armDelayedStart);
-  window.addEventListener("pointerup", () => {
-    if (startAllowed && waitingForStart && !startTimerId) {
-      tryStartNow();
-    }
-  }, { once: true, passive: true });
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      video.pause();
-      return;
-    }
-
-    if (startAllowed && !hasStartedOnce) {
-      if (!startTimerId) {
-        tryStartNow();
-      }
-      return;
-    }
-
-    if (startAllowed && hasStartedOnce && video.paused && !document.body.classList.contains("is-locked")) {
-      startPlayback();
-    }
-  });
-
-  window.addEventListener("pagehide", clearStartTimer, { once: true });
-
-  freezeAtStart();
 }
 
 function setupIntroStatueVideoLoop() {
+  const section = document.getElementById("bienvenidaFotos");
   const vicVideo = document.getElementById("introVideoVic");
   const crisVideo = document.getElementById("introVideoCris");
 
   if (
-    !(vicVideo instanceof HTMLVideoElement)
+    !(section instanceof HTMLElement)
+    || !(vicVideo instanceof HTMLVideoElement)
     || !(crisVideo instanceof HTMLVideoElement)
   ) {
     return;
   }
 
   const vicTriggerSeconds = 10;
+  const visibilityThreshold = 0.22;
+  const visibilityRootMargin = "0px 0px -10% 0px";
+  let sectionIsVisible = false;
+  let cycleRunning = false;
   let activePhase = "vic-only";
-  let cycleArmed = false;
   let vicEndedInCycle = false;
   let crisEndedInCycle = false;
 
@@ -3052,6 +3183,10 @@ function setupIntroStatueVideoLoop() {
   };
 
   const applyPlaybackDefaults = (video) => {
+    video.loop = false;
+    video.removeAttribute("loop");
+    video.autoplay = false;
+    video.removeAttribute("autoplay");
     video.defaultPlaybackRate = 1;
     video.playbackRate = 1;
     video.muted = true;
@@ -3062,23 +3197,17 @@ function setupIntroStatueVideoLoop() {
   const safePlay = (video) => {
     applyPlaybackDefaults(video);
 
-    if (!video.paused && Math.abs(video.playbackRate - 1) < 0.001) {
+    if (!video.paused) {
       return;
     }
 
     const playAttempt = video.play();
     if (playAttempt && typeof playAttempt.catch === "function") {
       playAttempt.catch(() => {
-        // Reintentamos cuando el navegador permita la reproduccion.
+        // Reintentamos al siguiente cambio de visibilidad o interaccion.
       });
     }
   };
-
-  const shouldRun = () => (
-    cycleArmed
-    && !document.hidden
-    && !document.body.classList.contains("is-locked")
-  );
 
   const getVicTriggerTime = () => {
     if (!Number.isFinite(vicVideo.duration) || vicVideo.duration <= 0) {
@@ -3095,11 +3224,6 @@ function setupIntroStatueVideoLoop() {
 
     return Math.max(0, video.duration - 0.05);
   };
-
-  const isVideoFinished = (video) => (
-    video.ended
-    || (Number.isFinite(video.duration) && video.duration > 0 && video.currentTime >= getVideoEndTime(video))
-  );
 
   const setCurrentTimeSafely = (video, time) => {
     try {
@@ -3123,17 +3247,33 @@ function setupIntroStatueVideoLoop() {
     setCurrentTimeSafely(video, getVideoEndTime(video));
   };
 
-  const beginVicCycle = () => {
+  const shouldRun = () => (
+    sectionIsVisible
+    && !document.hidden
+    && !document.body.classList.contains("is-locked")
+  );
+
+  const resetCycle = () => {
+    cycleRunning = false;
     activePhase = "vic-only";
     vicEndedInCycle = false;
     crisEndedInCycle = false;
-    freezeAtStart(crisVideo);
     freezeAtStart(vicVideo);
+    freezeAtStart(crisVideo);
+  };
+
+  const beginVicCycle = () => {
+    cycleRunning = true;
+    activePhase = "vic-only";
+    vicEndedInCycle = false;
+    crisEndedInCycle = false;
+    freezeAtStart(vicVideo);
+    freezeAtStart(crisVideo);
     refreshPlayback();
   };
 
   const maybeStartCris = () => {
-    if (activePhase !== "vic-only" || vicEndedInCycle || crisEndedInCycle) {
+    if (!cycleRunning || activePhase !== "vic-only" || vicEndedInCycle || crisEndedInCycle) {
       return;
     }
 
@@ -3148,8 +3288,12 @@ function setupIntroStatueVideoLoop() {
 
   const refreshPlayback = () => {
     if (!shouldRun()) {
-      safePause(vicVideo);
-      safePause(crisVideo);
+      resetCycle();
+      return;
+    }
+
+    if (!cycleRunning) {
+      beginVicCycle();
       return;
     }
 
@@ -3184,6 +3328,11 @@ function setupIntroStatueVideoLoop() {
   };
 
   const handleVicEnded = () => {
+    if (!cycleRunning) {
+      freezeAtStart(vicVideo);
+      return;
+    }
+
     vicEndedInCycle = true;
     freezeAtEnd(vicVideo);
 
@@ -3200,6 +3349,11 @@ function setupIntroStatueVideoLoop() {
   };
 
   const handleCrisEnded = () => {
+    if (!cycleRunning) {
+      freezeAtStart(crisVideo);
+      return;
+    }
+
     crisEndedInCycle = true;
     freezeAtEnd(crisVideo);
 
@@ -3209,6 +3363,43 @@ function setupIntroStatueVideoLoop() {
     }
 
     refreshPlayback();
+  };
+
+  const updateSectionVisibility = (nextVisible) => {
+    if (sectionIsVisible === nextVisible) {
+      if (nextVisible) {
+        refreshPlayback();
+      }
+      return;
+    }
+
+    sectionIsVisible = nextVisible;
+
+    if (!sectionIsVisible) {
+      resetCycle();
+      return;
+    }
+
+    refreshPlayback();
+  };
+
+  const updateSectionVisibilityFromRect = () => {
+    const rect = section.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+
+    if (rect.width <= 0 || rect.height <= 0 || viewportWidth <= 0 || viewportHeight <= 0) {
+      updateSectionVisibility(false);
+      return;
+    }
+
+    const visibleWidth = Math.max(0, Math.min(rect.right, viewportWidth) - Math.max(rect.left, 0));
+    const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+    const visibleArea = visibleWidth * visibleHeight;
+    const totalArea = rect.width * rect.height;
+    const visibleRatio = totalArea > 0 ? visibleArea / totalArea : 0;
+
+    updateSectionVisibility(visibleRatio >= visibilityThreshold);
   };
 
   const enforcePlaybackRate = (video) => {
@@ -3236,30 +3427,41 @@ function setupIntroStatueVideoLoop() {
   vicVideo.addEventListener("loadedmetadata", refreshPlayback);
   crisVideo.addEventListener("loadeddata", refreshPlayback);
   crisVideo.addEventListener("canplay", refreshPlayback);
-  crisVideo.addEventListener("loadedmetadata", () => {
-    if (activePhase === "vic-only") {
-      freezeAtStart(crisVideo);
-      return;
-    }
+  crisVideo.addEventListener("loadedmetadata", refreshPlayback);
 
-    refreshPlayback();
-  });
+  document.addEventListener("visibilitychange", refreshPlayback);
+  window.addEventListener("pointerup", refreshPlayback, { passive: true });
+
+  if (typeof window.IntersectionObserver === "function") {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.target !== section) {
+            return;
+          }
+
+          updateSectionVisibility(entry.isIntersecting && entry.intersectionRatio >= visibilityThreshold);
+        });
+      },
+      {
+        threshold: [0, visibilityThreshold, 1],
+        rootMargin: visibilityRootMargin
+      }
+    );
+
+    observer.observe(section);
+    window.addEventListener("pagehide", () => {
+      observer.disconnect();
+    }, { once: true });
+  } else {
+    updateSectionVisibilityFromRect();
+    window.addEventListener("scroll", updateSectionVisibilityFromRect, { passive: true });
+    window.addEventListener("resize", updateSectionVisibilityFromRect, { passive: true });
+  }
 
   applyPlaybackDefaults(vicVideo);
   applyPlaybackDefaults(crisVideo);
-
-  freezeAtStart(vicVideo);
-  freezeAtStart(crisVideo);
-
-  document.addEventListener("visibilitychange", refreshPlayback);
-  window.addEventListener(AMBIENT_UNLOCK_EVENT, refreshPlayback);
-  window.addEventListener(HERO_VIDEO_PLAYING_EVENT, () => {
-    cycleArmed = true;
-    beginVicCycle();
-  });
-  window.addEventListener("pointerup", refreshPlayback, { once: true, passive: true });
-
-  window.setTimeout(refreshPlayback, 220);
+  resetCycle();
 }
 
 function setupCountdown() {
