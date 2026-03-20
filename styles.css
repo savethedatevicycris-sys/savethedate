@@ -1933,6 +1933,24 @@ body.theme-light .section.intro-photos-section {
   z-index: 1;
 }
 
+.video-preview-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  border-radius: inherit;
+  transition: opacity 180ms ease;
+}
+
+.video-preview-frame.is-visible {
+  opacity: 1;
+}
+
 .couple-photo-window::before {
   content: none;
 }
@@ -1956,6 +1974,10 @@ body.theme-light .section.intro-photos-section {
 
 #introVideoCris {
   object-position: 50% 54%;
+}
+
+#introVideoCrisPreview {
+  background-position: 50% 54%;
 }
 
 @media (max-width: 760px) {

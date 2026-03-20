@@ -3158,6 +3158,7 @@ function setupIntroStatueVideoLoop() {
   const section = document.getElementById("bienvenidaFotos");
   const vicVideo = document.getElementById("introVideoVic");
   const crisVideo = document.getElementById("introVideoCris");
+  const crisPreview = document.getElementById("introVideoCrisPreview");
 
   if (
     !(section instanceof HTMLElement)
@@ -3167,7 +3168,8 @@ function setupIntroStatueVideoLoop() {
     return;
   }
 
-  const vicTriggerSeconds = 10;
+  const vicTriggerSeconds = 9.5;
+  const crisPreviewSeconds = 0.5;
   const visibilityThreshold = 0.22;
   const visibilityRootMargin = "0px 0px -10% 0px";
   let sectionIsVisible = false;
@@ -3175,6 +3177,8 @@ function setupIntroStatueVideoLoop() {
   let activePhase = "vic-only";
   let vicEndedInCycle = false;
   let crisEndedInCycle = false;
+  let crisPreviewReady = false;
+  let crisPreviewPromise = null;
 
   const safePause = (video) => {
     if (!video.paused) {
@@ -3225,6 +3229,18 @@ function setupIntroStatueVideoLoop() {
     return Math.max(0, video.duration - 0.05);
   };
 
+  const getPreviewTime = (video, time) => {
+    if (!Number.isFinite(time) || time <= 0) {
+      return 0;
+    }
+
+    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+      return time;
+    }
+
+    return Math.min(time, Math.max(0, video.duration - 0.08));
+  };
+
   const setCurrentTimeSafely = (video, time) => {
     try {
       if (!Number.isFinite(video.currentTime) || Math.abs(video.currentTime - time) > 0.04) {
@@ -3235,9 +3251,142 @@ function setupIntroStatueVideoLoop() {
     }
   };
 
+  const setCrisPreviewVisible = (isVisible) => {
+    if (!(crisPreview instanceof HTMLElement)) {
+      return;
+    }
+
+    crisPreview.classList.toggle("is-visible", isVisible);
+  };
+
+  const applyCrisPreviewImage = (dataUrl) => {
+    if (!(crisPreview instanceof HTMLElement) || !dataUrl) {
+      return;
+    }
+
+    crisPreview.style.backgroundImage = `url("${dataUrl}")`;
+    crisPreviewReady = true;
+    crisVideo.poster = dataUrl;
+  };
+
+  const buildCrisPreviewFrame = () => {
+    if (!(crisPreview instanceof HTMLElement)) {
+      return Promise.resolve(false);
+    }
+
+    if (crisPreviewReady && crisPreview.style.backgroundImage) {
+      return Promise.resolve(true);
+    }
+
+    if (crisPreviewPromise) {
+      return crisPreviewPromise;
+    }
+
+    crisPreviewPromise = new Promise((resolve) => {
+      let isSettled = false;
+
+      const finalize = (didSucceed) => {
+        if (isSettled) {
+          return;
+        }
+
+        isSettled = true;
+
+        if (!didSucceed && (!cycleRunning || activePhase === "vic-only" || crisVideo.paused)) {
+          setCurrentTimeSafely(crisVideo, getPreviewTime(crisVideo, crisPreviewSeconds));
+        }
+
+        crisPreviewPromise = null;
+        resolve(didSucceed);
+      };
+
+      const captureCurrentFrame = () => {
+        window.requestAnimationFrame(() => {
+          try {
+            const width = crisVideo.videoWidth || 0;
+            const height = crisVideo.videoHeight || 0;
+
+            if (width <= 0 || height <= 0) {
+              finalize(false);
+              return;
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext("2d");
+
+            if (!context) {
+              finalize(false);
+              return;
+            }
+
+            context.drawImage(crisVideo, 0, 0, width, height);
+            applyCrisPreviewImage(canvas.toDataURL("image/jpeg", 0.9));
+            finalize(true);
+          } catch (_error) {
+            finalize(false);
+          }
+        });
+      };
+
+      const captureAtPreviewTime = () => {
+        if (cycleRunning && activePhase !== "vic-only" && !crisVideo.paused) {
+          finalize(false);
+          return;
+        }
+
+        const previewTime = getPreviewTime(crisVideo, crisPreviewSeconds);
+
+        if (Math.abs(crisVideo.currentTime - previewTime) <= 0.04) {
+          captureCurrentFrame();
+          return;
+        }
+
+        crisVideo.addEventListener("seeked", captureCurrentFrame, { once: true });
+        setCurrentTimeSafely(crisVideo, previewTime);
+      };
+
+      if (
+        crisVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+        && crisVideo.videoWidth > 0
+        && crisVideo.videoHeight > 0
+      ) {
+        captureAtPreviewTime();
+        return;
+      }
+
+      const tryCaptureLater = () => {
+        captureAtPreviewTime();
+      };
+
+      crisVideo.addEventListener("loadeddata", tryCaptureLater, { once: true });
+      crisVideo.addEventListener("canplay", tryCaptureLater, { once: true });
+      crisVideo.addEventListener("loadedmetadata", tryCaptureLater, { once: true });
+
+      window.setTimeout(() => {
+        if (!crisPreviewReady && crisPreviewPromise) {
+          finalize(false);
+        }
+      }, 3000);
+    });
+
+    return crisPreviewPromise;
+  };
+
   const freezeAtStart = (video) => {
     applyPlaybackDefaults(video);
     safePause(video);
+
+    if (video === crisVideo) {
+      setCurrentTimeSafely(video, getPreviewTime(video, crisPreviewSeconds));
+      setCrisPreviewVisible(true);
+      buildCrisPreviewFrame().catch(() => {
+        // Si falla la captura seguiremos con el frame nativo del video.
+      });
+      return;
+    }
+
     setCurrentTimeSafely(video, 0);
   };
 
@@ -3321,6 +3470,7 @@ function setupIntroStatueVideoLoop() {
     }
 
     if (crisEndedInCycle) {
+      setCrisPreviewVisible(false);
       freezeAtEnd(crisVideo);
     } else {
       safePlay(crisVideo);
@@ -3415,6 +3565,14 @@ function setupIntroStatueVideoLoop() {
   vicVideo.addEventListener("timeupdate", maybeStartCris);
   vicVideo.addEventListener("ended", handleVicEnded);
   crisVideo.addEventListener("ended", handleCrisEnded);
+  crisVideo.addEventListener("playing", () => {
+    setCrisPreviewVisible(false);
+  });
+  crisVideo.addEventListener("loadeddata", () => {
+    buildCrisPreviewFrame().catch(() => {
+      // Si Safari rechaza la captura, mantenemos el comportamiento existente.
+    });
+  });
   vicVideo.addEventListener("ratechange", () => {
     enforcePlaybackRate(vicVideo);
   });
@@ -3461,6 +3619,9 @@ function setupIntroStatueVideoLoop() {
 
   applyPlaybackDefaults(vicVideo);
   applyPlaybackDefaults(crisVideo);
+  buildCrisPreviewFrame().catch(() => {
+    // La preview es una mejora visual; no debe romper el bucle si falla.
+  });
   resetCycle();
 }
 
