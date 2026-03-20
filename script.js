@@ -3177,7 +3177,10 @@ function setupIntroStatueVideoLoop() {
   let activePhase = "vic-only";
   let vicEndedInCycle = false;
   let crisEndedInCycle = false;
-  let crisPreviewReady = false;
+  let crisPreviewReady = Boolean(
+    crisPreview instanceof HTMLElement
+    && crisPreview.style.backgroundImage
+  );
   let crisPreviewPromise = null;
 
   const safePause = (video) => {
