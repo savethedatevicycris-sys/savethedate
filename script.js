@@ -3172,6 +3172,10 @@ function setupIntroStatueVideoLoop() {
   const crisPreviewSeconds = 0.5;
   const visibilityThreshold = 0.22;
   const visibilityRootMargin = "0px 0px -10% 0px";
+  const prefersAggressiveCrisRestart = typeof window.matchMedia === "function"
+    && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  const crisStallNearEndThreshold = 0.22;
+  const crisStallTimeoutMs = 520;
   let sectionIsVisible = false;
   let cycleRunning = false;
   let activePhase = "vic-only";
@@ -3184,6 +3188,9 @@ function setupIntroStatueVideoLoop() {
   let crisStartRequestId = 0;
   let cycleRestartPending = false;
   let cycleRestartTimerId = 0;
+  let crisLoopWatchdogId = 0;
+  let lastCrisObservedTime = -1;
+  let lastCrisProgressAt = 0;
   let crisPreviewReady = Boolean(
     crisPreview instanceof HTMLElement
     && crisPreview.style.backgroundImage
@@ -3337,6 +3344,96 @@ function setupIntroStatueVideoLoop() {
     cycleRestartTimerId = 0;
   };
 
+  const clearCrisLoopWatchdog = () => {
+    if (crisLoopWatchdogId) {
+      window.clearInterval(crisLoopWatchdogId);
+      crisLoopWatchdogId = 0;
+    }
+
+    lastCrisObservedTime = -1;
+    lastCrisProgressAt = 0;
+  };
+
+  const recordCrisPlaybackProgress = () => {
+    if (!Number.isFinite(crisVideo.currentTime)) {
+      return;
+    }
+
+    lastCrisObservedTime = crisVideo.currentTime;
+    lastCrisProgressAt = performance.now();
+  };
+
+  const syncCrisPlaybackProgress = () => {
+    const currentTime = Number.isFinite(crisVideo.currentTime) ? crisVideo.currentTime : -1;
+    if (currentTime < 0) {
+      return;
+    }
+
+    if (lastCrisObservedTime < 0 || Math.abs(currentTime - lastCrisObservedTime) > 0.02) {
+      lastCrisObservedTime = currentTime;
+      lastCrisProgressAt = performance.now();
+    }
+  };
+
+  const reloadVideoElement = (video, { forceSourceReset = false } = {}) => {
+    if (!(video instanceof HTMLVideoElement)) {
+      return;
+    }
+
+    if (forceSourceReset) {
+      const sourceNodes = Array.from(video.querySelectorAll("source"));
+      sourceNodes.forEach((source) => {
+        if (!(source instanceof HTMLSourceElement)) {
+          return;
+        }
+
+        const originalSrc = source.dataset.originalSrc || source.getAttribute("src") || source.src;
+        if (!originalSrc) {
+          return;
+        }
+
+        source.dataset.originalSrc = originalSrc;
+        source.removeAttribute("src");
+      });
+
+      const directSrc = video.dataset.originalSrc || video.getAttribute("src") || "";
+      if (directSrc) {
+        video.dataset.originalSrc = directSrc;
+        video.removeAttribute("src");
+      }
+
+      try {
+        video.load();
+      } catch (_error) {
+        // Algunos navegadores pueden bloquear load() en ciertos estados.
+      }
+
+      sourceNodes.forEach((source) => {
+        if (!(source instanceof HTMLSourceElement)) {
+          return;
+        }
+
+        const originalSrc = source.dataset.originalSrc;
+        if (!originalSrc) {
+          return;
+        }
+
+        source.setAttribute("src", originalSrc);
+      });
+
+      const restoredDirectSrc = video.dataset.originalSrc || "";
+      if (restoredDirectSrc) {
+        video.setAttribute("src", restoredDirectSrc);
+      }
+    }
+
+    try {
+      video.load();
+    } catch (_error) {
+      // Algunos navegadores pueden bloquear load() en ciertos estados.
+    }
+  };
+
   const seekVideoReliably = (
     video,
     time,
@@ -3384,11 +3481,9 @@ function setupIntroStatueVideoLoop() {
         window.setTimeout(runAttempt, 30);
       };
 
-      try {
-        video.load();
-      } catch (_error) {
-        // Algunos navegadores pueden bloquear load() en ciertos estados.
-      }
+      reloadVideoElement(video, {
+        forceSourceReset: video === crisVideo && prefersAggressiveCrisRestart
+      });
 
       video.addEventListener("loadedmetadata", rerunAfterReload, { once: true });
       window.setTimeout(rerunAfterReload, 280);
@@ -3444,6 +3539,11 @@ function setupIntroStatueVideoLoop() {
 
     const targetTime = Math.max(0, Number.isFinite(time) ? time : 0);
     const shouldSeekBeforePlay = video.ended || !isCurrentTimeNear(video, targetTime);
+
+    if (video === crisVideo) {
+      setCrisPreviewVisible(true);
+      recordCrisPlaybackProgress();
+    }
 
     if (!shouldSeekBeforePlay) {
       if (!video.paused) {
@@ -3678,6 +3778,7 @@ function setupIntroStatueVideoLoop() {
 
     invalidatePendingStartRequest(currentVideo);
     safePause(currentVideo);
+    clearCrisLoopWatchdog();
 
     const replacement = currentVideo.cloneNode(true);
     if (!(replacement instanceof HTMLVideoElement)) {
@@ -3695,12 +3796,9 @@ function setupIntroStatueVideoLoop() {
 
     applyPlaybackDefaults(crisVideo);
     attachCrisVideoListeners();
-
-    try {
-      crisVideo.load();
-    } catch (_error) {
-      // Algunos navegadores pueden bloquear load() en ciertos estados.
-    }
+    reloadVideoElement(crisVideo, {
+      forceSourceReset: prefersAggressiveCrisRestart
+    });
 
     freezeAtStart(crisVideo);
     return true;
@@ -3721,9 +3819,11 @@ function setupIntroStatueVideoLoop() {
 
     cycleRestartPending = true;
     clearCycleRestartTimer();
+    clearCrisLoopWatchdog();
     invalidatePendingStartRequest(vicVideo);
     invalidatePendingStartRequest(crisVideo);
     safePause(vicVideo);
+    setCrisPreviewVisible(true);
     recreateCrisVideoElement();
 
     cycleRestartTimerId = window.setTimeout(() => {
@@ -3764,6 +3864,7 @@ function setupIntroStatueVideoLoop() {
     crisNeedsRestart = true;
     cycleRestartPending = false;
     clearCycleRestartTimer();
+    clearCrisLoopWatchdog();
     invalidatePendingStartRequest(vicVideo);
     invalidatePendingStartRequest(crisVideo);
     freezeAtStart(vicVideo);
@@ -3778,6 +3879,7 @@ function setupIntroStatueVideoLoop() {
     crisNeedsRestart = true;
     cycleRestartPending = false;
     clearCycleRestartTimer();
+    clearCrisLoopWatchdog();
     invalidatePendingStartRequest(vicVideo);
     invalidatePendingStartRequest(crisVideo);
     freezeAtStart(vicVideo);
@@ -3816,6 +3918,7 @@ function setupIntroStatueVideoLoop() {
     }
 
     if (activePhase === "vic-only") {
+      clearCrisLoopWatchdog();
       freezeAtStart(crisVideo);
 
       if (vicEndedInCycle) {
@@ -3841,7 +3944,10 @@ function setupIntroStatueVideoLoop() {
       safePlay(vicVideo);
     }
 
-    setCrisPreviewVisible(false);
+    if (prefersAggressiveCrisRestart) {
+      startCrisLoopWatchdog();
+    }
+
     if (crisNeedsRestart) {
       crisNeedsRestart = false;
       playFromTime(crisVideo, getPreviewTime(crisVideo, crisPreviewSeconds));
@@ -3875,6 +3981,7 @@ function setupIntroStatueVideoLoop() {
       return;
     }
 
+    setCrisPreviewVisible(true);
     scheduleCycleRestart();
   };
 
@@ -3926,7 +4033,33 @@ function setupIntroStatueVideoLoop() {
   };
 
   const handleCrisPlaying = () => {
+    recordCrisPlaybackProgress();
+    if (prefersAggressiveCrisRestart) {
+      startCrisLoopWatchdog();
+      return;
+    }
+
     setCrisPreviewVisible(false);
+  };
+
+  const handleCrisTimeUpdate = () => {
+    syncCrisPlaybackProgress();
+
+    if (
+      cycleRunning
+      && activePhase === "both"
+      && Number.isFinite(crisVideo.currentTime)
+      && crisVideo.currentTime > getPreviewTime(crisVideo, crisPreviewSeconds) + 0.04
+    ) {
+      setCrisPreviewVisible(false);
+    }
+
+    maybeRestartAfterCris();
+  };
+
+  const handleCrisPause = () => {
+    syncCrisPlaybackProgress();
+    maybeRestartAfterCris();
   };
 
   const handleCrisLoadedData = () => {
@@ -3940,8 +4073,8 @@ function setupIntroStatueVideoLoop() {
   };
 
   const attachCrisVideoListeners = () => {
-    crisVideo.addEventListener("timeupdate", maybeRestartAfterCris);
-    crisVideo.addEventListener("pause", maybeRestartAfterCris);
+    crisVideo.addEventListener("timeupdate", handleCrisTimeUpdate);
+    crisVideo.addEventListener("pause", handleCrisPause);
     crisVideo.addEventListener("ended", handleCrisEnded);
     crisVideo.addEventListener("playing", handleCrisPlaying);
     crisVideo.addEventListener("loadeddata", handleCrisLoadedData);
@@ -3964,6 +4097,7 @@ function setupIntroStatueVideoLoop() {
 
   document.addEventListener("visibilitychange", refreshPlayback);
   window.addEventListener("pointerup", refreshPlayback, { passive: true });
+  window.addEventListener("pagehide", clearCrisLoopWatchdog, { once: true });
 
   if (typeof window.IntersectionObserver === "function") {
     const observer = new IntersectionObserver(
@@ -3998,6 +4132,46 @@ function setupIntroStatueVideoLoop() {
     // La preview es una mejora visual; no debe romper el bucle si falla.
   });
   resetCycle();
+
+  function startCrisLoopWatchdog() {
+    if (!prefersAggressiveCrisRestart || crisLoopWatchdogId) {
+      return;
+    }
+
+    recordCrisPlaybackProgress();
+    crisLoopWatchdogId = window.setInterval(() => {
+      if (
+        !shouldRun()
+        || !cycleRunning
+        || activePhase !== "both"
+        || crisNeedsRestart
+        || cycleRestartPending
+        || isStartPending(crisVideo)
+      ) {
+        return;
+      }
+
+      if (!Number.isFinite(crisVideo.duration) || crisVideo.duration <= 0) {
+        return;
+      }
+
+      syncCrisPlaybackProgress();
+
+      if (hasCrisReachedLoopEnd()) {
+        scheduleCycleRestart();
+        return;
+      }
+
+      const timeUntilEnd = getVideoEndTime(crisVideo) - crisVideo.currentTime;
+      if (
+        timeUntilEnd <= crisStallNearEndThreshold
+        && lastCrisProgressAt > 0
+        && (performance.now() - lastCrisProgressAt) >= crisStallTimeoutMs
+      ) {
+        scheduleCycleRestart();
+      }
+    }, 220);
+  }
 }
 
 function setupCountdown() {
