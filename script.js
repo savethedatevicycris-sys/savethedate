@@ -3337,6 +3337,94 @@ function setupIntroStatueVideoLoop() {
     cycleRestartTimerId = 0;
   };
 
+  const seekVideoReliably = (
+    video,
+    time,
+    {
+      requestId = 0,
+      allowReloadFallback = false,
+      onSettled = null
+    } = {}
+  ) => {
+    const targetTime = Math.max(0, Number.isFinite(time) ? time : 0);
+    let isSettled = false;
+    let attemptCount = 0;
+    let didFallbackReload = false;
+
+    const isRequestStillValid = () => (
+      requestId === 0 || isPendingStartRequestCurrent(video, requestId)
+    );
+
+    const finalize = (didReachTarget) => {
+      if (isSettled) {
+        return;
+      }
+
+      isSettled = true;
+
+      if (typeof onSettled === "function") {
+        onSettled(didReachTarget);
+      }
+    };
+
+    const runAttempt = () => {
+      if (isSettled || !isRequestStillValid()) {
+        return;
+      }
+
+      attemptCount += 1;
+      setCurrentTimeSafely(video, targetTime);
+
+      if (isCurrentTimeNear(video, targetTime, 0.14)) {
+        finalize(true);
+        return;
+      }
+
+      if (attemptCount < 4) {
+        window.setTimeout(runAttempt, 70 * attemptCount);
+        return;
+      }
+
+      if (allowReloadFallback && !didFallbackReload) {
+        didFallbackReload = true;
+
+        const rerunAfterReload = () => {
+          if (isSettled || !isRequestStillValid()) {
+            return;
+          }
+
+          attemptCount = 0;
+          window.setTimeout(runAttempt, 30);
+        };
+
+        try {
+          video.load();
+        } catch (_error) {
+          // Algunos navegadores pueden bloquear load() en ciertos estados.
+        }
+
+        video.addEventListener("loadedmetadata", rerunAfterReload, { once: true });
+        window.setTimeout(rerunAfterReload, 280);
+        return;
+      }
+
+      finalize(false);
+    };
+
+    const startAttempts = () => {
+      runAttempt();
+      window.requestAnimationFrame(runAttempt);
+    };
+
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      startAttempts();
+      return;
+    }
+
+    video.addEventListener("loadedmetadata", startAttempts, { once: true });
+    window.setTimeout(startAttempts, 240);
+  };
+
   const playFromTime = (video, time) => {
     applyPlaybackDefaults(video);
 
@@ -3371,20 +3459,32 @@ function setupIntroStatueVideoLoop() {
       queuePlayAttempt(video);
     };
 
-    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
-      video.addEventListener("seeked", attemptPlay, { once: true });
-      setCurrentTimeSafely(video, targetTime);
-      window.setTimeout(attemptPlay, 140);
-      return;
-    }
+    seekVideoReliably(video, targetTime, {
+      requestId,
+      allowReloadFallback: video === crisVideo,
+      onSettled: (didReachTarget) => {
+        if (!isPendingStartRequestCurrent(video, requestId)) {
+          return;
+        }
 
-    video.addEventListener("loadedmetadata", () => {
-      setCurrentTimeSafely(video, targetTime);
-      window.setTimeout(attemptPlay, 60);
-    }, { once: true });
+        if (!didReachTarget && video === crisVideo) {
+          clearPendingStartRequest(video, requestId);
+          setCrisPreviewVisible(true);
+          return;
+        }
 
-    setCurrentTimeSafely(video, targetTime);
-    window.setTimeout(attemptPlay, 240);
+        attemptPlay();
+      }
+    });
+
+    window.setTimeout(() => {
+      if (
+        isPendingStartRequestCurrent(video, requestId)
+        && isCurrentTimeNear(video, targetTime, 0.14)
+      ) {
+        attemptPlay();
+      }
+    }, video === crisVideo ? 280 : 180);
   };
 
   const setCrisPreviewVisible = (isVisible) => {
@@ -3515,7 +3615,9 @@ function setupIntroStatueVideoLoop() {
     safePause(video);
 
     if (video === crisVideo) {
-      setCurrentTimeSafely(video, getPreviewTime(video, crisPreviewSeconds));
+      seekVideoReliably(video, getPreviewTime(video, crisPreviewSeconds), {
+        allowReloadFallback: true
+      });
       setCrisPreviewVisible(true);
       buildCrisPreviewFrame().catch(() => {
         // Si falla la captura seguiremos con el frame nativo del video.
@@ -3523,7 +3625,9 @@ function setupIntroStatueVideoLoop() {
       return;
     }
 
-    setCurrentTimeSafely(video, 0);
+    seekVideoReliably(video, 0, {
+      allowReloadFallback: video.ended
+    });
   };
 
   const freezeAtEnd = (video) => {
@@ -3556,7 +3660,7 @@ function setupIntroStatueVideoLoop() {
     invalidatePendingStartRequest(vicVideo);
     invalidatePendingStartRequest(crisVideo);
     safePause(vicVideo);
-    freezeAtEnd(crisVideo);
+    freezeAtStart(crisVideo);
 
     cycleRestartTimerId = window.setTimeout(() => {
       cycleRestartTimerId = 0;
