@@ -3157,7 +3157,7 @@ function setupHeroVideoPlayback(videoId) {
 function setupIntroStatueVideoLoop() {
   const section = document.getElementById("bienvenidaFotos");
   const vicVideo = document.getElementById("introVideoVic");
-  const crisVideo = document.getElementById("introVideoCris");
+  let crisVideo = document.getElementById("introVideoCris");
   const crisPreview = document.getElementById("introVideoCrisPreview");
 
   if (
@@ -3665,6 +3665,47 @@ function setupIntroStatueVideoLoop() {
     && !document.body.classList.contains("is-locked")
   );
 
+  const recreateCrisVideoElement = () => {
+    const currentVideo = crisVideo;
+    if (!(currentVideo instanceof HTMLVideoElement)) {
+      return false;
+    }
+
+    const parentNode = currentVideo.parentNode;
+    if (!(parentNode instanceof Node)) {
+      return false;
+    }
+
+    invalidatePendingStartRequest(currentVideo);
+    safePause(currentVideo);
+
+    const replacement = currentVideo.cloneNode(true);
+    if (!(replacement instanceof HTMLVideoElement)) {
+      return false;
+    }
+
+    replacement.poster = currentVideo.poster || replacement.getAttribute("poster") || "";
+    parentNode.replaceChild(replacement, currentVideo);
+    crisVideo = replacement;
+    crisPreviewPromise = null;
+    crisPreviewReady = Boolean(
+      crisPreview instanceof HTMLElement
+      && crisPreview.style.backgroundImage
+    );
+
+    applyPlaybackDefaults(crisVideo);
+    attachCrisVideoListeners();
+
+    try {
+      crisVideo.load();
+    } catch (_error) {
+      // Algunos navegadores pueden bloquear load() en ciertos estados.
+    }
+
+    freezeAtStart(crisVideo);
+    return true;
+  };
+
   const hasCrisReachedLoopEnd = () => {
     if (!Number.isFinite(crisVideo.duration) || crisVideo.duration <= 0) {
       return false;
@@ -3683,7 +3724,7 @@ function setupIntroStatueVideoLoop() {
     invalidatePendingStartRequest(vicVideo);
     invalidatePendingStartRequest(crisVideo);
     safePause(vicVideo);
-    freezeAtStart(crisVideo);
+    recreateCrisVideoElement();
 
     cycleRestartTimerId = window.setTimeout(() => {
       cycleRestartTimerId = 0;
@@ -3884,32 +3925,42 @@ function setupIntroStatueVideoLoop() {
     }
   };
 
-  vicVideo.addEventListener("timeupdate", maybeStartCris);
-  vicVideo.addEventListener("ended", handleVicEnded);
-  crisVideo.addEventListener("timeupdate", maybeRestartAfterCris);
-  crisVideo.addEventListener("pause", maybeRestartAfterCris);
-  crisVideo.addEventListener("ended", handleCrisEnded);
-  crisVideo.addEventListener("playing", () => {
+  const handleCrisPlaying = () => {
     setCrisPreviewVisible(false);
-  });
-  crisVideo.addEventListener("loadeddata", () => {
+  };
+
+  const handleCrisLoadedData = () => {
     buildCrisPreviewFrame().catch(() => {
       // Si Safari rechaza la captura, mantenemos el comportamiento existente.
     });
-  });
+  };
+
+  const handleCrisRateChange = () => {
+    enforcePlaybackRate(crisVideo);
+  };
+
+  const attachCrisVideoListeners = () => {
+    crisVideo.addEventListener("timeupdate", maybeRestartAfterCris);
+    crisVideo.addEventListener("pause", maybeRestartAfterCris);
+    crisVideo.addEventListener("ended", handleCrisEnded);
+    crisVideo.addEventListener("playing", handleCrisPlaying);
+    crisVideo.addEventListener("loadeddata", handleCrisLoadedData);
+    crisVideo.addEventListener("ratechange", handleCrisRateChange);
+    crisVideo.addEventListener("loadeddata", refreshPlayback);
+    crisVideo.addEventListener("canplay", refreshPlayback);
+    crisVideo.addEventListener("loadedmetadata", refreshPlayback);
+  };
+
+  vicVideo.addEventListener("timeupdate", maybeStartCris);
+  vicVideo.addEventListener("ended", handleVicEnded);
+  attachCrisVideoListeners();
   vicVideo.addEventListener("ratechange", () => {
     enforcePlaybackRate(vicVideo);
-  });
-  crisVideo.addEventListener("ratechange", () => {
-    enforcePlaybackRate(crisVideo);
   });
 
   vicVideo.addEventListener("loadeddata", refreshPlayback);
   vicVideo.addEventListener("canplay", refreshPlayback);
   vicVideo.addEventListener("loadedmetadata", refreshPlayback);
-  crisVideo.addEventListener("loadeddata", refreshPlayback);
-  crisVideo.addEventListener("canplay", refreshPlayback);
-  crisVideo.addEventListener("loadedmetadata", refreshPlayback);
 
   document.addEventListener("visibilitychange", refreshPlayback);
   window.addEventListener("pointerup", refreshPlayback, { passive: true });
