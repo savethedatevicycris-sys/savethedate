@@ -3168,14 +3168,15 @@ function setupIntroStatueVideoLoop() {
     return;
   }
 
-  const vicTriggerSeconds = 9.5;
-  const crisPreviewSeconds = 0.5;
+  const vicTriggerSeconds = 10;
+  const crisPreviewSeconds = 0;
   const visibilityThreshold = 0.22;
   const visibilityRootMargin = "0px 0px -10% 0px";
   const prefersAggressiveCrisRestart = typeof window.matchMedia === "function"
     && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
   const crisStallNearEndThreshold = 0.22;
   const crisStallTimeoutMs = 520;
+  const cycleRestartDelayMs = prefersAggressiveCrisRestart ? 220 : 120;
   let sectionIsVisible = false;
   let cycleRunning = false;
   let activePhase = "vic-only";
@@ -3252,6 +3253,8 @@ function setupIntroStatueVideoLoop() {
 
     return Math.min(time, Math.max(0, video.duration - 0.08));
   };
+
+  const getCrisStartTime = () => getPreviewTime(crisVideo, crisPreviewSeconds);
 
   const setCurrentTimeSafely = (video, time) => {
     try {
@@ -3588,6 +3591,7 @@ function setupIntroStatueVideoLoop() {
         if (!didReachTarget && video === crisVideo) {
           clearPendingStartRequest(video, requestId);
           setCrisPreviewVisible(true);
+          scheduleCycleRestart();
           return;
         }
 
@@ -3647,7 +3651,7 @@ function setupIntroStatueVideoLoop() {
         isSettled = true;
 
         if (!didSucceed && (!cycleRunning || activePhase === "vic-only" || crisVideo.paused)) {
-          setCurrentTimeSafely(crisVideo, getPreviewTime(crisVideo, crisPreviewSeconds));
+          setCurrentTimeSafely(crisVideo, getCrisStartTime());
         }
 
         crisPreviewPromise = null;
@@ -3690,7 +3694,7 @@ function setupIntroStatueVideoLoop() {
           return;
         }
 
-        const previewTime = getPreviewTime(crisVideo, crisPreviewSeconds);
+        const previewTime = getCrisStartTime();
 
         if (Math.abs(crisVideo.currentTime - previewTime) <= 0.04) {
           captureCurrentFrame();
@@ -3733,12 +3737,12 @@ function setupIntroStatueVideoLoop() {
     safePause(video);
 
     if (video === crisVideo) {
-      seekVideoReliably(video, getPreviewTime(video, crisPreviewSeconds), {
+      seekVideoReliably(video, getCrisStartTime(), {
         allowReloadFallback: true,
         preferReload: (
           video.ended
           || (Number.isFinite(video.currentTime)
-            && video.currentTime > getPreviewTime(video, crisPreviewSeconds) + 0.25)
+            && video.currentTime > getCrisStartTime() + 0.25)
         )
       });
       setCrisPreviewVisible(true);
@@ -3823,6 +3827,10 @@ function setupIntroStatueVideoLoop() {
     invalidatePendingStartRequest(vicVideo);
     invalidatePendingStartRequest(crisVideo);
     safePause(vicVideo);
+    reloadVideoElement(vicVideo, {
+      forceSourceReset: prefersAggressiveCrisRestart
+    });
+    freezeAtStart(vicVideo);
     setCrisPreviewVisible(true);
     recreateCrisVideoElement();
 
@@ -3836,7 +3844,7 @@ function setupIntroStatueVideoLoop() {
       }
 
       beginVicCycle();
-    }, 120);
+    }, cycleRestartDelayMs);
   };
 
   const maybeRestartAfterCris = () => {
@@ -3950,7 +3958,15 @@ function setupIntroStatueVideoLoop() {
 
     if (crisNeedsRestart) {
       crisNeedsRestart = false;
-      playFromTime(crisVideo, getPreviewTime(crisVideo, crisPreviewSeconds));
+      playFromTime(crisVideo, getCrisStartTime());
+    } else if (
+      crisVideo.paused
+      && (
+        crisVideo.ended
+        || (Number.isFinite(crisVideo.currentTime) && crisVideo.currentTime > getCrisStartTime() + 0.35)
+      )
+    ) {
+      playFromTime(crisVideo, getCrisStartTime());
     } else if (!isStartPending(crisVideo)) {
       safePlay(crisVideo);
     } else {
@@ -4049,7 +4065,7 @@ function setupIntroStatueVideoLoop() {
       cycleRunning
       && activePhase === "both"
       && Number.isFinite(crisVideo.currentTime)
-      && crisVideo.currentTime > getPreviewTime(crisVideo, crisPreviewSeconds) + 0.04
+      && crisVideo.currentTime > getCrisStartTime() + 0.04
     ) {
       setCrisPreviewVisible(false);
     }
