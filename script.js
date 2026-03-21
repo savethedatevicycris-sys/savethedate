@@ -3343,6 +3343,7 @@ function setupIntroStatueVideoLoop() {
     {
       requestId = 0,
       allowReloadFallback = false,
+      preferReload = false,
       onSettled = null
     } = {}
   ) => {
@@ -3367,6 +3368,32 @@ function setupIntroStatueVideoLoop() {
       }
     };
 
+    const reloadAndRetry = () => {
+      if (didFallbackReload || isSettled || !isRequestStillValid()) {
+        return;
+      }
+
+      didFallbackReload = true;
+
+      const rerunAfterReload = () => {
+        if (isSettled || !isRequestStillValid()) {
+          return;
+        }
+
+        attemptCount = 0;
+        window.setTimeout(runAttempt, 30);
+      };
+
+      try {
+        video.load();
+      } catch (_error) {
+        // Algunos navegadores pueden bloquear load() en ciertos estados.
+      }
+
+      video.addEventListener("loadedmetadata", rerunAfterReload, { once: true });
+      window.setTimeout(rerunAfterReload, 280);
+    };
+
     const runAttempt = () => {
       if (isSettled || !isRequestStillValid()) {
         return;
@@ -3386,25 +3413,7 @@ function setupIntroStatueVideoLoop() {
       }
 
       if (allowReloadFallback && !didFallbackReload) {
-        didFallbackReload = true;
-
-        const rerunAfterReload = () => {
-          if (isSettled || !isRequestStillValid()) {
-            return;
-          }
-
-          attemptCount = 0;
-          window.setTimeout(runAttempt, 30);
-        };
-
-        try {
-          video.load();
-        } catch (_error) {
-          // Algunos navegadores pueden bloquear load() en ciertos estados.
-        }
-
-        video.addEventListener("loadedmetadata", rerunAfterReload, { once: true });
-        window.setTimeout(rerunAfterReload, 280);
+        reloadAndRetry();
         return;
       }
 
@@ -3412,6 +3421,11 @@ function setupIntroStatueVideoLoop() {
     };
 
     const startAttempts = () => {
+      if (preferReload) {
+        reloadAndRetry();
+        return;
+      }
+
       runAttempt();
       window.requestAnimationFrame(runAttempt);
     };
@@ -3462,6 +3476,10 @@ function setupIntroStatueVideoLoop() {
     seekVideoReliably(video, targetTime, {
       requestId,
       allowReloadFallback: video === crisVideo,
+      preferReload: (
+        video === crisVideo
+        && (video.ended || (Number.isFinite(video.currentTime) && video.currentTime > targetTime + 0.25))
+      ),
       onSettled: (didReachTarget) => {
         if (!isPendingStartRequestCurrent(video, requestId)) {
           return;
@@ -3616,7 +3634,12 @@ function setupIntroStatueVideoLoop() {
 
     if (video === crisVideo) {
       seekVideoReliably(video, getPreviewTime(video, crisPreviewSeconds), {
-        allowReloadFallback: true
+        allowReloadFallback: true,
+        preferReload: (
+          video.ended
+          || (Number.isFinite(video.currentTime)
+            && video.currentTime > getPreviewTime(video, crisPreviewSeconds) + 0.25)
+        )
       });
       setCrisPreviewVisible(true);
       buildCrisPreviewFrame().catch(() => {
