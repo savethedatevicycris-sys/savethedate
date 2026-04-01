@@ -174,12 +174,12 @@ const weddingConfig = {
           {
             src: "assets/gallery/peluqueria.png",
             alt: "Zona de peluquería y maquillaje",
-            caption: "Espacio de peinado y maquillaje"
+            caption: "Peluquería y maquillaje"
           },
           {
-            src: "assets/gallery/palace-hall.jpg",
-            alt: "Detalle de trabajo de peluquería",
-            caption: "Ejemplos de acabado (placeholder)"
+            src: "assets/gallery/peluqueria_salon.jpg",
+            alt: "Salón de peluquería",
+            caption: "Salón de peluquería disponible dentro del palacete"
           }
         ],
         links: [
@@ -187,13 +187,13 @@ const weddingConfig = {
             type: "instagram",
             label: "Instagram",
             description: "Ver trabajos recientes de la estilista",
-            url: "https://www.instagram.com/"
+            url: "https://www.instagram.com/divecci_estilistas/"
           },
           {
             type: "web",
             label: "Web",
             description: "Portfolio y servicios completos",
-            url: "https://example.com/"
+            url: "https://divecci.es/"
           }
         ]
       }
@@ -207,6 +207,7 @@ const weddingConfig = {
       details: {
         kicker: "Cuidado infantil durante la boda",
         lead: "Un equipo profesional se encargará de los peques para que mayores y niños disfruten del evento.",
+        mediaLayout: "compact",
         paragraphs: [
           "La guardería estará activa durante la cena y la fiesta, con control de entrada y salida para cada familia.",
           "Habrá actividades tranquilas, zona de juego y espacio de descanso para distintos tramos de edad."
@@ -218,14 +219,24 @@ const weddingConfig = {
         ],
         images: [
           {
-            src: "assets/gallery/cuidadora-ninos.png",
-            alt: "Sala principal de guardería infantil",
-            caption: "Sala principal de actividades"
+            src: "assets/gallery/zona_cine.jpg",
+            alt: "Zona de cine infantil",
+            caption: ""
           },
           {
-            src: "assets/gallery/palace-courtyard.jpg",
+            src: "assets/gallery/zona_play.jpg",
+            alt: "Zona de juego interactivo",
+            caption: ""
+          },
+          {
+            src: "assets/gallery/zona_juegos.jpg",
             alt: "Zona de juegos infantiles",
-            caption: "Zona de juegos y descanso (placeholder)"
+            caption: ""
+          },
+          {
+            src: "assets/gallery/zona_castillo.jpg",
+            alt: "Castillo hinchable infantil",
+            caption: ""
           }
         ]
       }
@@ -272,6 +283,7 @@ const AMBIENT_START_EVENT = "ambient-start-request";
 const HERO_VIDEO_START_EVENT = "hero-video-start-request";
 const HERO_VIDEO_PLAYING_EVENT = "hero-video-playing";
 const HERO_VIDEO_DELAY_AFTER_GATE_CLICK_MS = 6000;
+const GUEST_STAY_GIFT_OPENED_EVENT = "guest-stay-gift-opened";
 
 document.addEventListener("DOMContentLoaded", () => {
   // Capa de ambiente global y progreso superior.
@@ -313,6 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupCopyButtons();
   setupForms();
   setupCalendarButton();
+  setupSmartBackLinks();
   setupScrollReveal();
   // Microinteracciones cinematográficas.
   setupHeroCinematicEffects();
@@ -320,7 +333,9 @@ document.addEventListener("DOMContentLoaded", () => {
   setupThanksMagic();
   attachStaticImageFallbacks();
   setupTitleCardFrameLoop();
-  setupTitleCardWritingEffect();
+  setupTitleCardZoomReveal();
+  setupGuestStayGiftLoop();
+  setupGuestStayRoomDiscovery();
 });
 
 function hydrateStaticContent() {
@@ -781,279 +796,279 @@ function setupTitleCardFrameLoop() {
   syncPlaybackState();
 }
 
-function setupTitleCardWritingEffect() {
-  const section = document.getElementById("titleCard");
-  const mainContent = document.getElementById("mainContent");
-  const gate = document.getElementById("letterGate");
-  const image = document.getElementById("titleCardImage");
-  const canvas = document.getElementById("titleCardWritingCanvas");
+function setupGuestStayGiftLoop() {
+  const section = document.getElementById("regalo-invitados");
+  const trigger = document.getElementById("guestStayGiftTrigger");
+  const image = document.getElementById("guestStayGiftImage");
+  const frame = section?.querySelector(".guest-gift-loop-frame");
+  if (!(section instanceof HTMLElement)
+    || !(trigger instanceof HTMLButtonElement)
+    || !(image instanceof HTMLImageElement)
+    || !(frame instanceof HTMLElement)) {
+    return;
+  }
+
+  const { srcClosed, srcOpening, srcOpen } = trigger.dataset;
+  if (!srcClosed || !srcOpening || !srcOpen) {
+    return;
+  }
+
+  const sources = {
+    closed: srcClosed,
+    opening: srcOpening,
+    open: srcOpen
+  };
+  const openingFrameDelayMs = reducedMotionQuery.matches ? 0 : 180;
+  const openingFrameHoldMs = reducedMotionQuery.matches ? 260 : 520;
+  const openFrameHoldMs = 4000;
+  const returnDurationMs = reducedMotionQuery.matches ? 0 : 900;
+
+  Object.values(sources).forEach((url) => {
+    const asset = new Image();
+    asset.decoding = "async";
+    asset.src = url;
+  });
+
+  let isPlaying = false;
+  let hasUnlockedRoomDiscovery = false;
+  let rafId = 0;
+  let timerIds = [];
+
+  const clearSequenceTimers = () => {
+    timerIds.forEach((timerId) => window.clearTimeout(timerId));
+    timerIds = [];
+
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+  };
+
+  const queue = (callback, delay) => {
+    const timerId = window.setTimeout(() => {
+      timerIds = timerIds.filter((currentId) => currentId !== timerId);
+      callback();
+    }, delay);
+
+    timerIds.push(timerId);
+    return timerId;
+  };
+
+  const setState = (state) => {
+    section.dataset.guestGiftState = state;
+  };
+
+  const resetZoomMetrics = () => {
+    section.style.setProperty("--guest-gift-zoom-x", "0px");
+    section.style.setProperty("--guest-gift-zoom-y", "0px");
+    section.style.setProperty("--guest-gift-zoom-scale", "1");
+  };
+
+  const syncZoomMetrics = () => {
+    const rect = frame.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const targetCenterX = viewportWidth / 2;
+    const targetCenterY = viewportHeight * (viewportWidth < 720 ? 0.44 : 0.47);
+    const widthRatio = viewportWidth < 720 ? 1.06 : 0.86;
+    const minScale = viewportWidth < 720 ? 1.16 : 1.08;
+    const targetWidth = Math.min(viewportWidth * widthRatio, 900);
+    const scale = Math.max(minScale, Math.min(1.34, targetWidth / rect.width));
+    const currentCenterX = rect.left + (rect.width / 2);
+    const currentCenterY = rect.top + (rect.height / 2);
+
+    section.style.setProperty("--guest-gift-zoom-x", `${Math.round(targetCenterX - currentCenterX)}px`);
+    section.style.setProperty("--guest-gift-zoom-y", `${Math.round(targetCenterY - currentCenterY)}px`);
+    section.style.setProperty("--guest-gift-zoom-scale", scale.toFixed(3));
+  };
+
+  const finishSequence = () => {
+    clearSequenceTimers();
+    resetZoomMetrics();
+    image.src = sources.open;
+    trigger.disabled = true;
+    setState("open");
+    isPlaying = false;
+  };
+
+  const playSequence = () => {
+    if (isPlaying || section.dataset.guestGiftState === "open") {
+      return;
+    }
+
+    isPlaying = true;
+    clearSequenceTimers();
+    resetZoomMetrics();
+    trigger.disabled = true;
+    image.src = sources.closed;
+    setState("opening");
+
+    queue(() => {
+      image.src = sources.opening;
+    }, openingFrameDelayMs);
+
+    const openRevealAtMs = openingFrameDelayMs + openingFrameHoldMs;
+    queue(() => {
+      image.src = sources.open;
+
+      if (!hasUnlockedRoomDiscovery) {
+        hasUnlockedRoomDiscovery = true;
+        window.dispatchEvent(new CustomEvent(GUEST_STAY_GIFT_OPENED_EVENT));
+      }
+
+      if (reducedMotionQuery.matches) {
+        setState("zoom");
+        return;
+      }
+
+      rafId = window.requestAnimationFrame(() => {
+        syncZoomMetrics();
+        rafId = window.requestAnimationFrame(() => {
+          setState("zoom");
+          rafId = 0;
+        });
+      });
+    }, openRevealAtMs);
+
+    const returnAtMs = openRevealAtMs + openFrameHoldMs;
+    queue(() => {
+      setState("returning");
+      resetZoomMetrics();
+    }, returnAtMs);
+
+    queue(finishSequence, returnAtMs + returnDurationMs);
+  };
+
+  trigger.addEventListener("click", playSequence);
+
+  const handleResize = () => {
+    if (section.dataset.guestGiftState === "zoom") {
+      syncZoomMetrics();
+    }
+  };
+
+  window.addEventListener("resize", handleResize, { passive: true });
+  window.addEventListener("pagehide", () => {
+    clearSequenceTimers();
+    window.removeEventListener("resize", handleResize);
+  }, { once: true });
+}
+
+function setupGuestStayRoomDiscovery() {
+  const section = document.getElementById("alojamiento");
+  const details = document.getElementById("palaceDiscoveryDetails");
+  const summary = document.getElementById("palaceDiscoverySummary");
+  const toggleButton = document.getElementById("palaceDiscoveryToggle");
+  const content = document.getElementById("palaceDiscoveryContent");
+  const label = document.getElementById("palaceDiscoveryLabel");
+  const palaceCard = section?.querySelector(".palace-card");
 
   if (
     !(section instanceof HTMLElement)
-    || !(image instanceof HTMLImageElement)
-    || !(canvas instanceof HTMLCanvasElement)
+    || !(details instanceof HTMLElement)
+    || !(summary instanceof HTMLElement)
+    || !(toggleButton instanceof HTMLButtonElement)
+    || !(content instanceof HTMLElement)
+    || !(label instanceof HTMLElement)
   ) {
     return;
   }
 
+  const collapsedLabel = label.dataset.collapsedLabel || label.textContent?.trim() || "";
+  const expandedLabel = label.dataset.expandedLabel || collapsedLabel;
+  const unlockDelayMs = reducedMotionQuery.matches ? 0 : 260;
+  let isUnlocked = !section.hidden;
+  let isExpanded = false;
+  let unlockTimerId = 0;
+
+  const syncState = () => {
+    const expanded = isExpanded;
+    details.classList.toggle("is-open", expanded);
+    summary.dataset.expanded = String(expanded);
+    toggleButton.setAttribute("aria-expanded", String(expanded));
+    toggleButton.setAttribute("aria-label", expanded ? expandedLabel : collapsedLabel);
+    label.textContent = expanded ? expandedLabel : collapsedLabel;
+    content.setAttribute("aria-hidden", String(!expanded));
+    content.inert = !expanded;
+
+    if (!isUnlocked) {
+      section.dataset.roomDiscoveryState = "locked";
+      return;
+    }
+
+    section.dataset.roomDiscoveryState = expanded ? "expanded" : "ready";
+
+    if (expanded && palaceCard instanceof HTMLElement) {
+      palaceCard.classList.add("is-visible");
+    }
+  };
+
+  const toggle = () => {
+    if (!isUnlocked) {
+      return;
+    }
+
+    isExpanded = !isExpanded;
+    syncState();
+  };
+
+  const unlock = () => {
+    if (isUnlocked) {
+      return;
+    }
+
+    isUnlocked = true;
+    window.clearTimeout(unlockTimerId);
+    unlockTimerId = window.setTimeout(() => {
+      section.hidden = false;
+      section.classList.add("is-visible");
+      syncState();
+    }, unlockDelayMs);
+  };
+
+  details.classList.remove("is-open");
+  isExpanded = false;
+  syncState();
+
+  toggleButton.addEventListener("click", toggle);
+  window.addEventListener(GUEST_STAY_GIFT_OPENED_EVENT, unlock);
+  window.addEventListener("pagehide", () => {
+    window.clearTimeout(unlockTimerId);
+    toggleButton.removeEventListener("click", toggle);
+    window.removeEventListener(GUEST_STAY_GIFT_OPENED_EVENT, unlock);
+  }, { once: true });
+}
+
+function setupTitleCardZoomReveal() {
+  const section = document.getElementById("titleCard");
+  const mainContent = document.getElementById("mainContent");
+  const gate = document.getElementById("letterGate");
+  const image = document.getElementById("titleCardImage");
+
+  if (
+    !(section instanceof HTMLElement)
+    || !(image instanceof HTMLImageElement)
+  ) {
+    return;
+  }
+
+  section.classList.remove("is-writing-active");
+  section.classList.add("has-zoom-reveal");
+
   if (reducedMotionQuery.matches) {
-    section.classList.remove("is-writing-active");
+    section.classList.add("is-zoom-reveal-active");
     return;
   }
-
-  const context = canvas.getContext("2d");
-  if (!context) {
-    return;
-  }
-
-  const analysisCanvas = document.createElement("canvas");
-  const analysisContext = analysisCanvas.getContext("2d", { willReadFrequently: true });
-  const letterMaskCanvas = document.createElement("canvas");
-  const letterMaskContext = letterMaskCanvas.getContext("2d");
-  const revealCanvas = document.createElement("canvas");
-  const revealContext = revealCanvas.getContext("2d");
-
-  if (!analysisContext || !letterMaskContext || !revealContext) {
-    return;
-  }
-
-  const writingDurationMs = 6200;
-  const fillSettleStart = 0.86;
-  const easeInOutCubic = (value) => (value < 0.5)
-    ? (4 * value * value * value)
-    : (1 - ((-2 * value + 2) ** 3) / 2);
-  const smoothstep = (edgeStart, edgeEnd, value) => {
-    if (edgeStart === edgeEnd) {
-      return value < edgeStart ? 0 : 1;
-    }
-
-    const normalized = clamp((value - edgeStart) / (edgeEnd - edgeStart), 0, 1);
-    return normalized * normalized * (3 - (2 * normalized));
-  };
-  const writingGuideStops = [
-    { x: 0.16, y: 0.64, t: 0.0 },
-    { x: 0.19, y: 0.36, t: 0.08 },
-    { x: 0.25, y: 0.52, t: 0.16 },
-    { x: 0.31, y: 0.44, t: 0.24 },
-    { x: 0.41, y: 0.43, t: 0.33 },
-    { x: 0.53, y: 0.43, t: 0.42 },
-    { x: 0.39, y: 0.56, t: 0.48 },
-    { x: 0.45, y: 0.57, t: 0.54 },
-    { x: 0.47, y: 0.67, t: 0.62 },
-    { x: 0.5, y: 0.5, t: 0.69 },
-    { x: 0.6, y: 0.6, t: 0.79 },
-    { x: 0.75, y: 0.59, t: 0.9 },
-    { x: 0.89, y: 0.58, t: 1.0 }
-  ];
-  const isInsideEllipse = (x, y, cx, cy, rx, ry) => {
-    if (rx <= 0 || ry <= 0) {
-      return false;
-    }
-
-    const dx = (x - cx) / rx;
-    const dy = (y - cy) / ry;
-    return ((dx * dx) + (dy * dy)) <= 1;
-  };
-  const isInsideNamesZone = (x, y, width, height) => {
-    const normalizedX = x / Math.max(1, width);
-    const normalizedY = y / Math.max(1, height);
-    if (normalizedY < 0.22 || normalizedY > 0.82) {
-      return false;
-    }
-
-    return (
-      isInsideEllipse(normalizedX, normalizedY, 0.23, 0.47, 0.17, 0.24)
-      || isInsideEllipse(normalizedX, normalizedY, 0.4, 0.44, 0.2, 0.14)
-      || isInsideEllipse(normalizedX, normalizedY, 0.39, 0.56, 0.1, 0.1)
-      || isInsideEllipse(normalizedX, normalizedY, 0.5, 0.62, 0.16, 0.21)
-      || isInsideEllipse(normalizedX, normalizedY, 0.73, 0.6, 0.27, 0.17)
-    );
-  };
-  const projectPointToWritingPath = (x, y, width, height) => {
-    const normalizedX = x / Math.max(1, width);
-    const normalizedY = y / Math.max(1, height);
-    let bestDistanceSquared = Number.POSITIVE_INFINITY;
-    let bestProgress = clamp(normalizedX, 0, 1);
-
-    for (let index = 0; index < writingGuideStops.length - 1; index += 1) {
-      const from = writingGuideStops[index];
-      const to = writingGuideStops[index + 1];
-      const segmentX = to.x - from.x;
-      const segmentY = to.y - from.y;
-      const segmentLengthSquared = (segmentX * segmentX) + (segmentY * segmentY);
-      if (segmentLengthSquared <= 0.0000001) {
-        continue;
-      }
-
-      const projected = clamp(
-        (((normalizedX - from.x) * segmentX) + ((normalizedY - from.y) * segmentY)) / segmentLengthSquared,
-        0,
-        1
-      );
-      const nearestX = from.x + (segmentX * projected);
-      const nearestY = from.y + (segmentY * projected);
-      const distanceX = normalizedX - nearestX;
-      const distanceY = normalizedY - nearestY;
-      const distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
-
-      if (distanceSquared < bestDistanceSquared) {
-        bestDistanceSquared = distanceSquared;
-        bestProgress = from.t + ((to.t - from.t) * projected);
-      }
-    }
-
-    return {
-      progress: clamp(bestProgress, 0, 1),
-      distancePx: Math.sqrt(bestDistanceSquared) * Math.max(width, height)
-    };
-  };
-  const getWritingPenPoint = (progress, width, height) => {
-    const clampedProgress = clamp(progress, 0, 1);
-
-    if (clampedProgress <= writingGuideStops[0].t) {
-      return {
-        x: writingGuideStops[0].x * width,
-        y: writingGuideStops[0].y * height
-      };
-    }
-
-    for (let index = 0; index < writingGuideStops.length - 1; index += 1) {
-      const from = writingGuideStops[index];
-      const to = writingGuideStops[index + 1];
-      if (clampedProgress > to.t) {
-        continue;
-      }
-
-      const localProgress = clamp((clampedProgress - from.t) / Math.max(0.00001, to.t - from.t), 0, 1);
-      const eased = localProgress * localProgress * (3 - (2 * localProgress));
-      return {
-        x: (from.x + ((to.x - from.x) * eased)) * width,
-        y: (from.y + ((to.y - from.y) * eased)) * height
-      };
-    }
-
-    const last = writingGuideStops[writingGuideStops.length - 1];
-    return {
-      x: last.x * width,
-      y: last.y * height
-    };
-  };
-  const estimateBackgroundColor = (pixels, width, height) => {
-    const points = [
-      [1, 1],
-      [width - 2, 1],
-      [1, height - 2],
-      [width - 2, height - 2],
-      [Math.round(width * 0.08), Math.round(height * 0.08)],
-      [Math.round(width * 0.92), Math.round(height * 0.08)],
-      [Math.round(width * 0.08), Math.round(height * 0.92)],
-      [Math.round(width * 0.92), Math.round(height * 0.92)],
-      [Math.round(width * 0.5), 1],
-      [Math.round(width * 0.5), height - 2]
-    ];
-
-    let red = 0;
-    let green = 0;
-    let blue = 0;
-    let count = 0;
-
-    points.forEach(([rawX, rawY]) => {
-      const x = clamp(Math.round(rawX), 0, width - 1);
-      const y = clamp(Math.round(rawY), 0, height - 1);
-      const index = ((y * width) + x) * 4;
-      const alpha = pixels[index + 3];
-      if (alpha < 4) {
-        return;
-      }
-
-      red += pixels[index];
-      green += pixels[index + 1];
-      blue += pixels[index + 2];
-      count += 1;
-    });
-
-    if (!count) {
-      return { r: 244, g: 237, b: 224 };
-    }
-
-    return {
-      r: red / count,
-      g: green / count,
-      b: blue / count
-    };
-  };
-  const isLetterPixel = (r, g, b, a, bgColor) => {
-    if (a < 12) {
-      return false;
-    }
-
-    const maxChannel = Math.max(r, g, b);
-    const minChannel = Math.min(r, g, b);
-    const saturation = maxChannel === 0 ? 0 : (maxChannel - minChannel) / maxChannel;
-    const luminance = ((0.2126 * r) + (0.7152 * g) + (0.0722 * b)) / 255;
-    const colorDistance = Math.hypot(r - bgColor.r, g - bgColor.g, b - bgColor.b);
-
-    if (a > 180 && colorDistance > 14) {
-      return true;
-    }
-
-    if (colorDistance > 28) {
-      return true;
-    }
-
-    if (saturation > 0.16 && luminance < 0.91) {
-      return true;
-    }
-
-    if (luminance < 0.74 && colorDistance > 12) {
-      return true;
-    }
-
-    return false;
-  };
-  const countNeighbors = (mask, x, y, width, height) => {
-    let count = 0;
-
-    for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
-      for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
-        if (offsetX === 0 && offsetY === 0) {
-          continue;
-        }
-
-        const sampleX = x + offsetX;
-        const sampleY = y + offsetY;
-        if (sampleX < 0 || sampleX >= width || sampleY < 0 || sampleY >= height) {
-          continue;
-        }
-
-        if (mask[(sampleY * width) + sampleX]) {
-          count += 1;
-        }
-      }
-    }
-
-    return count;
-  };
 
   let started = false;
-  let completed = false;
-  let sourceReady = false;
   let startRequested = false;
-  let rafId = 0;
-  let startTimestamp = 0;
-  let resizeFrameId = 0;
-  let currentProgress = 0;
   let observer = null;
-  let resizeObserver = null;
   let gateUnlockObserver = null;
   let hasIntersected = false;
-  let hasLetterMask = false;
-  let canAnalyzeSourcePixels = true;
-  let letterRows = [];
-  let rowStepPx = 3;
-  let cachedCssWidth = 0;
-  let cachedCssHeight = 0;
-  let cachedDpr = 0;
 
   const isGateBlockingAnimation = () => {
     const bodyLocked = document.body.classList.contains("is-locked");
@@ -1064,418 +1079,12 @@ function setupTitleCardWritingEffect() {
     return bodyLocked || mainHidden || gateVisible;
   };
 
-  const buildLetterGeometry = (width, height) => {
-    if (!canAnalyzeSourcePixels) {
-      hasLetterMask = false;
-      letterRows = [];
-      letterMaskContext.clearRect(0, 0, width, height);
-      return;
-    }
-
-    analysisContext.clearRect(0, 0, width, height);
-    analysisContext.drawImage(image, 0, 0, width, height);
-    let imageData;
-
-    try {
-      imageData = analysisContext.getImageData(0, 0, width, height);
-    } catch {
-      canAnalyzeSourcePixels = false;
-      hasLetterMask = false;
-      letterRows = [];
-      letterMaskContext.clearRect(0, 0, width, height);
-      return;
-    }
-
-    const source = imageData.data;
-    const backgroundColor = estimateBackgroundColor(source, width, height);
-    const rawMask = new Uint8Array(width * height);
-    const cleanedMask = new Uint8Array(width * height);
-    const maskImageData = letterMaskContext.createImageData(width, height);
-    const maskPixels = maskImageData.data;
-    const totalPixels = width * height;
-    let transparentPixels = 0;
-
-    for (let pixelIndex = 0; pixelIndex < totalPixels; pixelIndex += 1) {
-      const sourceIndex = (pixelIndex * 4) + 3;
-      if (source[sourceIndex] < 8) {
-        transparentPixels += 1;
-      }
-    }
-
-    const usesTransparentBackdrop = transparentPixels > (totalPixels * 0.18);
-
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const pixelIndex = (y * width) + x;
-        const sourceIndex = pixelIndex * 4;
-        const red = source[sourceIndex];
-        const green = source[sourceIndex + 1];
-        const blue = source[sourceIndex + 2];
-        const alpha = source[sourceIndex + 3];
-        const visibleByAlpha = alpha > 8;
-        rawMask[pixelIndex] = usesTransparentBackdrop
-          ? (visibleByAlpha ? 1 : 0)
-          : (isLetterPixel(red, green, blue, alpha, backgroundColor) ? 1 : 0);
-      }
-    }
-
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const pixelIndex = (y * width) + x;
-        const neighbors = countNeighbors(rawMask, x, y, width, height);
-        if (rawMask[pixelIndex]) {
-          cleanedMask[pixelIndex] = neighbors >= 2 ? 1 : 0;
-        } else {
-          cleanedMask[pixelIndex] = neighbors >= 7 ? 1 : 0;
-        }
-      }
-    }
-
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const pixelIndex = (y * width) + x;
-        if (!cleanedMask[pixelIndex]) {
-          continue;
-        }
-
-        if (!isInsideNamesZone(x, y, width, height)) {
-          cleanedMask[pixelIndex] = 0;
-        }
-      }
-    }
-
-    letterRows = [];
-    rowStepPx = Math.max(2, Math.round(height / 270));
-    const minRunLength = Math.max(1, Math.round(width * 0.0018));
-
-    for (let pixelIndex = 0; pixelIndex < cleanedMask.length; pixelIndex += 1) {
-      if (!cleanedMask[pixelIndex]) {
-        continue;
-      }
-
-      const maskIndex = pixelIndex * 4;
-      maskPixels[maskIndex] = 255;
-      maskPixels[maskIndex + 1] = 255;
-      maskPixels[maskIndex + 2] = 255;
-      maskPixels[maskIndex + 3] = 255;
-    }
-
-    letterMaskContext.clearRect(0, 0, width, height);
-    letterMaskContext.putImageData(maskImageData, 0, 0);
-
-    for (let y = 0; y < height; y += rowStepPx) {
-      const segments = [];
-      let x = 0;
-
-      while (x < width) {
-        while (x < width && !cleanedMask[(y * width) + x]) {
-          x += 1;
-        }
-
-        if (x >= width) {
-          break;
-        }
-
-        const start = x;
-
-        while (x < width && cleanedMask[(y * width) + x]) {
-          x += 1;
-        }
-
-        const end = x - 1;
-        const runLength = end - start + 1;
-        if (runLength >= minRunLength) {
-          const segmentCenter = (start + end) * 0.5;
-          const projection = projectPointToWritingPath(segmentCenter, y + 0.5, width, height);
-          segments.push({
-            start,
-            end,
-            center: segmentCenter,
-            width: runLength,
-            revealT: projection.progress,
-            pathDistance: projection.distancePx
-          });
-        }
-      }
-
-      if (segments.length) {
-        letterRows.push({
-          y: y + 0.5,
-          segments
-        });
-      }
-    }
-
-    hasLetterMask = letterRows.length > 0;
-  };
-
-  const syncCanvasSize = () => {
-    const fallbackRect = image.getBoundingClientRect();
-    const cssWidth = Math.max(1, Math.round(image.clientWidth || fallbackRect.width || image.naturalWidth || 1));
-    const cssHeight = Math.max(1, Math.round(image.clientHeight || fallbackRect.height || image.naturalHeight || 1));
-    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-    const pixelWidth = Math.max(1, Math.round(cssWidth * dpr));
-    const pixelHeight = Math.max(1, Math.round(cssHeight * dpr));
-
-    canvas.style.width = `${cssWidth}px`;
-    canvas.style.height = `${cssHeight}px`;
-
-    if (
-      canvas.width !== pixelWidth
-      || canvas.height !== pixelHeight
-    ) {
-      canvas.width = pixelWidth;
-      canvas.height = pixelHeight;
-    }
-
-    if (
-      cssWidth !== cachedCssWidth
-      || cssHeight !== cachedCssHeight
-      || dpr !== cachedDpr
-      || analysisCanvas.width !== cssWidth
-      || analysisCanvas.height !== cssHeight
-    ) {
-      cachedCssWidth = cssWidth;
-      cachedCssHeight = cssHeight;
-      cachedDpr = dpr;
-
-      analysisCanvas.width = cssWidth;
-      analysisCanvas.height = cssHeight;
-      letterMaskCanvas.width = cssWidth;
-      letterMaskCanvas.height = cssHeight;
-      revealCanvas.width = cssWidth;
-      revealCanvas.height = cssHeight;
-
-      if (sourceReady) {
-        buildLetterGeometry(cssWidth, cssHeight);
-      }
-    }
-
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return { width: cssWidth, height: cssHeight };
-  };
-
-  const renderLetterRevealMask = (progress, width, height) => {
-    revealContext.clearRect(0, 0, width, height);
-    if (!hasLetterMask) {
-      return;
-    }
-
-    const clampedProgress = clamp(progress, 0, 1);
-    const penPoint = getWritingPenPoint(clampedProgress, width, height);
-    const guideDistanceLimit = clamp(width * 0.14, 52, 120);
-
-    revealContext.save();
-    revealContext.strokeStyle = "#fff";
-    revealContext.fillStyle = "#fff";
-    revealContext.lineCap = "round";
-    revealContext.lineJoin = "round";
-
-    letterRows.forEach((row) => {
-      row.segments.forEach((segment) => {
-        const distanceWeight = 1 - clamp(segment.pathDistance / guideDistanceLimit, 0, 1);
-        if (distanceWeight <= 0) {
-          return;
-        }
-
-        const timelineReveal = smoothstep(segment.revealT - 0.085, segment.revealT + 0.034, clampedProgress);
-        const closePulse = 1 - clamp(Math.abs(clampedProgress - segment.revealT) / 0.12, 0, 1);
-        const revealStrength = clamp(
-          (timelineReveal * (0.58 + (0.42 * distanceWeight))) + (closePulse * 0.38 * distanceWeight),
-          0,
-          1
-        );
-
-        if (revealStrength <= 0.001) {
-          return;
-        }
-
-        const lineWidth = Math.max(1.2, segment.width * (0.42 + (0.52 * revealStrength)));
-        revealContext.globalAlpha = (0.1 + (0.82 * revealStrength)) * (0.45 + (0.55 * distanceWeight));
-        revealContext.lineWidth = lineWidth;
-        revealContext.beginPath();
-        revealContext.moveTo(segment.start, row.y);
-        revealContext.lineTo(segment.end, row.y);
-        revealContext.stroke();
-
-        const tipDistance = Math.hypot(penPoint.x - segment.center, penPoint.y - row.y);
-        const tipProximity = 1 - clamp(tipDistance / (segment.width * 1.35 + 42), 0, 1);
-        if (tipProximity <= 0) {
-          return;
-        }
-
-        const tipRadius = Math.max(2.2, segment.width * (0.3 + (0.56 * tipProximity)));
-        const tipX = segment.start + (segment.width * clamp((penPoint.x - segment.start) / Math.max(1, segment.width), 0, 1));
-        revealContext.globalAlpha = (0.08 + (0.3 * tipProximity)) * (0.6 + (0.4 * distanceWeight));
-        revealContext.beginPath();
-        revealContext.arc(tipX, row.y, tipRadius, 0, Math.PI * 2);
-        revealContext.fill();
-      });
-    });
-
-    revealContext.restore();
-    revealContext.save();
-    revealContext.globalCompositeOperation = "destination-in";
-    revealContext.drawImage(letterMaskCanvas, 0, 0, width, height);
-    revealContext.restore();
-  };
-
-  const renderFrame = (progress) => {
-    const { width, height } = syncCanvasSize();
-    context.clearRect(0, 0, width, height);
-
-    if (!sourceReady || width <= 0 || height <= 0) {
-      return;
-    }
-
-    renderLetterRevealMask(progress, width, height);
-
-    // Base muy tenue para evitar cortes bruscos durante la escritura.
-    context.save();
-    context.globalAlpha = 0.03 + (progress * 0.07);
-    context.drawImage(image, 0, 0, width, height);
-    context.restore();
-
-    if (hasLetterMask) {
-      // Revelado principal usando la máscara real de las letras.
-      context.save();
-      context.drawImage(image, 0, 0, width, height);
-      context.globalCompositeOperation = "destination-in";
-      context.drawImage(revealCanvas, 0, 0, width, height);
-      context.restore();
-
-      if (progress < 1) {
-        const clampedProgress = clamp(progress, 0, 1);
-        const penPoint = getWritingPenPoint(clampedProgress, width, height);
-        const glowRadius = clamp(width * 0.13, 82, 170);
-        const glowGradient = context.createRadialGradient(
-          penPoint.x,
-          penPoint.y,
-          glowRadius * 0.04,
-          penPoint.x,
-          penPoint.y,
-          glowRadius
-        );
-        glowGradient.addColorStop(0, "rgba(255, 252, 236, 0.98)");
-        glowGradient.addColorStop(0.16, "rgba(255, 243, 203, 0.9)");
-        glowGradient.addColorStop(0.46, "rgba(255, 223, 151, 0.44)");
-        glowGradient.addColorStop(1, "rgba(255, 223, 151, 0)");
-
-        context.save();
-        context.globalAlpha = 0.78 * (1 - smoothstep(0.9, 1, progress));
-        context.fillStyle = glowGradient;
-        context.fillRect(
-          penPoint.x - glowRadius,
-          penPoint.y - glowRadius,
-          glowRadius * 2,
-          glowRadius * 2
-        );
-        context.globalCompositeOperation = "source-in";
-        context.drawImage(image, 0, 0, width, height);
-        context.globalCompositeOperation = "destination-in";
-        context.drawImage(letterMaskCanvas, 0, 0, width, height);
-        context.restore();
-
-        const sparkAlpha = 0.62 * (1 - smoothstep(0.88, 1, progress));
-        if (sparkAlpha > 0.01) {
-          context.save();
-          context.globalCompositeOperation = "screen";
-          context.fillStyle = "rgba(255, 245, 206, 1)";
-          for (let index = 0; index < 5; index += 1) {
-            const phase = (clampedProgress * 9.8) + (index * 0.93);
-            const orbit = 11 + (7 * Math.sin((clampedProgress * Math.PI * 4.2) + index));
-            const sparkX = penPoint.x + (Math.cos(phase * Math.PI * 2) * orbit);
-            const sparkY = penPoint.y + (Math.sin((phase * 1.21) * Math.PI * 2) * (orbit * 0.72));
-            const sparkRadius = 1.2 + (1.6 * (0.5 + (0.5 * Math.sin((phase * Math.PI * 2) + 0.4))));
-            context.globalAlpha = sparkAlpha * (0.44 + (0.54 * ((index + 1) / 5)));
-            context.beginPath();
-            context.arc(sparkX, sparkY, sparkRadius, 0, Math.PI * 2);
-            context.fill();
-          }
-          context.restore();
-        }
-      }
-    } else {
-      // Fallback simple en caso de no detectar bien el texto.
-      const revealX = clamp(width * progress, 0, width);
-      context.save();
-      context.beginPath();
-      context.rect(0, 0, revealX, height);
-      context.clip();
-      context.drawImage(image, 0, 0, width, height);
-      context.restore();
-    }
-
-    // Termina de asentar la textura completa al final para evitar huecos.
-    const settleReveal = smoothstep(fillSettleStart, 1, progress);
-    if (settleReveal > 0) {
-      context.save();
-      context.globalAlpha = settleReveal * 0.96;
-      context.drawImage(image, 0, 0, width, height);
-      context.restore();
-    }
-
-    const flicker = progress < 1 ? (0.02 * Math.sin(progress * Math.PI * 11.3)) : 0;
-    if (flicker > 0) {
-      context.save();
-      context.globalAlpha = flicker;
-      context.drawImage(image, 0, 0, width, height);
-      context.restore();
-    }
-  };
-
-  const scheduleResizeRender = () => {
-    if (resizeFrameId) {
-      return;
-    }
-
-    resizeFrameId = window.requestAnimationFrame(() => {
-      resizeFrameId = 0;
-      if (completed) {
-        return;
-      }
-
-      renderFrame(currentProgress);
-    });
-  };
-
-  const completeAnimation = () => {
-    completed = true;
-    section.classList.remove("is-writing-active");
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    analysisContext.setTransform(1, 0, 0, 1, 0, 0);
-    analysisContext.clearRect(0, 0, analysisCanvas.width, analysisCanvas.height);
-    letterMaskContext.setTransform(1, 0, 0, 1, 0, 0);
-    letterMaskContext.clearRect(0, 0, letterMaskCanvas.width, letterMaskCanvas.height);
-    revealContext.setTransform(1, 0, 0, 1, 0, 0);
-    revealContext.clearRect(0, 0, revealCanvas.width, revealCanvas.height);
-  };
-
-  const animate = (timestamp) => {
-    if (!startTimestamp) {
-      startTimestamp = timestamp;
-    }
-
-    const linearProgress = clamp((timestamp - startTimestamp) / writingDurationMs, 0, 1);
-    currentProgress = easeInOutCubic(linearProgress);
-    renderFrame(currentProgress);
-
-    if (linearProgress < 1) {
-      rafId = window.requestAnimationFrame(animate);
-      return;
-    }
-
-    rafId = 0;
-    completeAnimation();
-  };
-
   const startAnimation = () => {
-    if (started || completed) {
+    if (started) {
       return true;
     }
 
-    if (!sourceReady) {
+    if (!image.complete || image.naturalWidth <= 0) {
       startRequested = true;
       return false;
     }
@@ -1487,30 +1096,14 @@ function setupTitleCardWritingEffect() {
 
     started = true;
     startRequested = false;
-    startTimestamp = 0;
-    currentProgress = 0;
-    section.classList.add("is-writing-active");
-    renderFrame(0);
-    rafId = window.requestAnimationFrame(animate);
+    section.classList.add("is-zoom-reveal-active");
     return true;
   };
 
   const onImageReady = () => {
-    sourceReady = image.naturalWidth > 0;
-    if (!sourceReady) {
+    if (image.naturalWidth <= 0) {
       return;
     }
-
-    const fallbackRect = image.getBoundingClientRect();
-    const initialWidth = Math.max(1, Math.round(image.clientWidth || fallbackRect.width || image.naturalWidth || 1));
-    const initialHeight = Math.max(1, Math.round(image.clientHeight || fallbackRect.height || image.naturalHeight || 1));
-    analysisCanvas.width = initialWidth;
-    analysisCanvas.height = initialHeight;
-    letterMaskCanvas.width = initialWidth;
-    letterMaskCanvas.height = initialHeight;
-    revealCanvas.width = initialWidth;
-    revealCanvas.height = initialHeight;
-    buildLetterGeometry(initialWidth, initialHeight);
 
     if (startRequested && (hasIntersected || !observer)) {
       startAnimation();
@@ -1524,8 +1117,8 @@ function setupTitleCardWritingEffect() {
   }
 
   image.addEventListener("error", () => {
-    section.classList.remove("is-writing-active");
-    completed = true;
+    section.classList.add("is-zoom-reveal-active");
+    started = true;
   }, { once: true });
 
   if (typeof window.IntersectionObserver === "function") {
@@ -1551,7 +1144,7 @@ function setupTitleCardWritingEffect() {
   }
 
   gateUnlockObserver = new MutationObserver(() => {
-    if (!startRequested || started || completed) {
+    if (!startRequested || started) {
       return;
     }
 
@@ -1585,43 +1178,16 @@ function setupTitleCardWritingEffect() {
     });
   }
 
-  if (typeof window.ResizeObserver === "function") {
-    resizeObserver = new ResizeObserver(() => {
-      scheduleResizeRender();
-    });
-    resizeObserver.observe(image);
-  } else {
-    window.addEventListener("resize", scheduleResizeRender, { passive: true });
-  }
-
   window.addEventListener("pagehide", () => {
-    if (rafId) {
-      window.cancelAnimationFrame(rafId);
-    }
-
-    if (resizeFrameId) {
-      window.cancelAnimationFrame(resizeFrameId);
-    }
-
     if (observer) {
       observer.disconnect();
       observer = null;
-    }
-
-    if (resizeObserver) {
-      resizeObserver.disconnect();
-      resizeObserver = null;
-    } else {
-      window.removeEventListener("resize", scheduleResizeRender);
     }
 
     if (gateUnlockObserver) {
       gateUnlockObserver.disconnect();
       gateUnlockObserver = null;
     }
-
-    letterRows = [];
-    hasLetterMask = false;
   }, { once: true });
 }
 
@@ -6166,22 +5732,26 @@ function setupServiceDetailsModal() {
     highlights.hidden = !points.length;
 
     mediaGrid.innerHTML = "";
+    mediaGrid.classList.toggle("service-modal-media-grid--compact", details.mediaLayout === "compact");
     const images = Array.isArray(details.images) ? details.images : [];
     images.forEach((item) => {
       const figure = document.createElement("figure");
       figure.className = "service-modal-media-card";
+      const captionText = typeof item.caption === "string" ? item.caption.trim() : "";
 
       const image = document.createElement("img");
       image.alt = item.alt || service.title;
       image.loading = "lazy";
       image.decoding = "async";
-      attachImageFallback(image, item.caption || service.title);
+      attachImageFallback(image, captionText || service.title);
       image.src = item.src || "";
 
-      const caption = document.createElement("figcaption");
-      caption.textContent = item.caption || "";
-
-      figure.append(image, caption);
+      figure.append(image);
+      if (captionText) {
+        const caption = document.createElement("figcaption");
+        caption.textContent = captionText;
+        figure.append(caption);
+      }
       mediaGrid.appendChild(figure);
     });
     mediaGrid.hidden = !images.length;
@@ -6609,6 +6179,56 @@ function setupCalendarButton() {
   button.href = calendarUrl.toString();
 }
 
+function setupSmartBackLinks() {
+  const links = [...document.querySelectorAll("[data-history-back]")]
+    .filter((link) => link instanceof HTMLAnchorElement);
+
+  if (!links.length) {
+    return;
+  }
+
+  links.forEach((link) => {
+    const fallbackHref = link.dataset.historyBack || link.getAttribute("href") || "index.html";
+    if (!fallbackHref) {
+      return;
+    }
+
+    link.addEventListener("click", (event) => {
+      const isPrimaryClick = event.button === 0;
+      const hasModifierKey = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+
+      if (!isPrimaryClick || hasModifierKey) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (!document.referrer && window.history.length <= 1) {
+        window.location.assign(fallbackHref);
+        return;
+      }
+
+      let fallbackTimer = 0;
+      const clearFallback = () => {
+        if (!fallbackTimer) {
+          return;
+        }
+
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = 0;
+      };
+
+      window.addEventListener("pagehide", clearFallback, { once: true });
+      fallbackTimer = window.setTimeout(() => {
+        clearFallback();
+        window.location.assign(fallbackHref);
+      }, 260);
+
+      window.history.back();
+    });
+  });
+}
+
 function setupScrollReveal() {
   const baseRevealItems = [...document.querySelectorAll("[data-reveal]")]
     .filter((item) => item instanceof HTMLElement);
@@ -6623,11 +6243,16 @@ function setupScrollReveal() {
     ".couple-photo-card"
   ];
   const fadeOnlyItems = [...document.querySelectorAll(fadeOnlySelectors.join(", "))]
-    .filter((item) => item instanceof HTMLElement && !item.hasAttribute("data-reveal"));
+    .filter((item) => item instanceof HTMLElement && !item.hasAttribute("data-reveal"))
+    .filter((item) => !(
+      item.classList.contains("couple-photo-card")
+      && item.closest(".intro-photos-section")
+    ));
 
-  fadeOnlyItems.forEach((item) => {
-    item.classList.add("scroll-fade-reveal");
-  });
+  fadeOnlyItems
+    .forEach((item) => {
+      item.classList.add("scroll-fade-reveal");
+    });
 
   const revealItems = [...new Set([...baseRevealItems, ...fadeOnlyItems])];
   if (!revealItems.length) {

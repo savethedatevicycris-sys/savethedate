@@ -301,42 +301,84 @@
     </section>
 
     <section class="section container gift-image-section gift-image-section--guest-stay" id="regalo-invitados"
-      data-reveal aria-labelledby="guestStayGiftTitle">
+      data-reveal data-guest-gift-state="idle" aria-labelledby="guestStayGiftTitle">
       <h2 class="sr-only" id="guestStayGiftTitle">Regalo para los invitados</h2>
-      <img class="gift-floating-image gift-floating-image--guest-stay" src="assets/gallery/regalo_para_invitados.png"
-        alt="Nuestro regalo para vosotros: una noche en el palacete, por nuestra cuenta. La estancia de una noche para la persona invitada y sus acompa&ntilde;antes en este d&iacute;a. Queremos que os olvid&eacute;is de todo, sobre todo de conducir, y disfrut&eacute;is la experiencia al m&aacute;ximo."
-        loading="lazy" decoding="async" />
+      <div class="guest-gift-loop-scene">
+        <button class="guest-gift-loop-trigger" id="guestStayGiftTrigger" type="button"
+          aria-label="Abrir regalo para invitados"
+          data-src-closed="assets/gallery/regalo_invitados_loop_frames/regalo_para_invitados_cerrado.png"
+          data-src-opening="assets/gallery/regalo_invitados_loop_frames/regalo_para_invitados_abriendo.png"
+          data-src-open="assets/gallery/regalo_invitados_loop_frames/regalo_para_invitados.png">
+          <span class="guest-gift-loop-bubble" aria-hidden="true">Haz click aqu&iacute;</span>
+          <span class="sr-only">Haz click aqu&iacute; para abrir el regalo para invitados.</span>
+          <span class="guest-gift-loop-frame">
+            <span class="guest-gift-loop-float">
+              <img class="guest-gift-loop-image" id="guestStayGiftImage"
+                src="assets/gallery/regalo_invitados_loop_frames/regalo_para_invitados_cerrado.png" alt=""
+                loading="lazy" decoding="async" />
+            </span>
+          </span>
+        </button>
+      </div>
     </section>
 
-    <section class="section container" id="alojamiento" data-reveal>
-      <p class="section-kicker">Alojamiento</p>
-      <h2>Habitaciones en el palacete</h2>
+    <section class="section container palace-discovery-section" id="alojamiento" data-reveal
+      data-room-discovery-state="locked" hidden>
+      <div class="palace-discovery-details" id="palaceDiscoveryDetails">
+        <div class="palace-discovery-summary" id="palaceDiscoverySummary">
+          <button class="palace-discovery-summary-toggle" id="palaceDiscoveryToggle" type="button"
+            aria-expanded="false" aria-controls="palaceDiscoveryContent">
+            <span class="palace-discovery-summary-icon" aria-hidden="true">
+              <img src="assets/gallery/icon-llave-antigua.png" alt="" loading="lazy" decoding="async" />
+            </span>
+            <span class="sr-only">Abrir detalles de la habitaci&oacute;n</span>
+          </button>
+          <span class="palace-discovery-summary-copy">
+            <span class="palace-discovery-summary-kicker">Pista desbloqueada</span>
+            <span class="palace-discovery-summary-label" id="palaceDiscoveryLabel"
+              data-collapsed-label="Pulsa la llave para descubrir la habitaci&oacute;n donde te alojar&aacute;s"
+              data-expanded-label="Pulsa la llave para volver a ocultar los detalles de tu habitaci&oacute;n">
+              Pulsa la llave para descubrir la habitaci&oacute;n donde te alojar&aacute;s
+            </span>
+          </span>
+        </div>
 
-      <article class="palace-card">
-        <figure class="palace-media">
-          <img id="palaceImage" src="assets/gallery/habitaciones_palacete.jpg" alt="Vista principal del palacete"
-            loading="lazy">
-        </figure>
+        <div class="palace-discovery-content" id="palaceDiscoveryContent" role="region"
+          aria-labelledby="palaceDiscoveryLabel" aria-hidden="true">
+          <div class="palace-discovery-content-inner">
+            <div class="palace-discovery-body">
+              <p class="section-kicker">Alojamiento</p>
+              <h2>Habitaciones en el palacete</h2>
 
-        <div class="palace-content">
-          <h3 id="venueName">Hotel Palacete De La Ochava</h3>
-          <p class="palace-address" id="venueAddressCard">Calle Alcalá, 65, C. Miguel de Cervantes, 11, 28511
-            Valdilecha, Madrid</p>
-          <p class="palace-stay-note">
-            El alojamiento y la estancia en el hotel desde las 15:00h del s&aacute;bado 26 de junio del 2027 hasta las
-            14:00h del domingo 27 de junio del 2027 es completamente <strong>GRATUITA</strong>. Recibir&eacute;is la
-            llave de vuestra habitaci&oacute;n en la recepci&oacute;n del hotel. Cada habitaci&oacute;n tiene asignados
-            los invitados.
-          </p>
-          <div class="actions-row">
-            <a class="btn btn-secondary" id="palaceWebsiteLink"
-              href="https://www.hotelpalaceteochava.com/el-palacete-de-la-ochava/#hotel" target="_blank"
-              rel="noopener">Ver habitaciones / web del palacete</a>
-            <a class="btn btn-ghost" id="palaceMapsLink" href="https://maps.app.goo.gl/fYbpdiKATBsvNCby6"
-              target="_blank" rel="noopener">Cómo llegar</a>
+              <article class="palace-card">
+                <figure class="palace-media">
+                  <img id="palaceImage" src="assets/gallery/habitaciones_palacete.jpg"
+                    alt="Vista principal del palacete" loading="lazy">
+                </figure>
+
+                <div class="palace-content">
+                  <h3 id="venueName">Hotel Palacete De La Ochava</h3>
+                  <p class="palace-address" id="venueAddressCard">Calle Alcalá, 65, C. Miguel de Cervantes, 11, 28511
+                    Valdilecha, Madrid</p>
+                  <p class="palace-stay-note">
+                    El alojamiento y la estancia en el hotel desde las 15:00h del s&aacute;bado 26 de junio del 2027
+                    hasta las 14:00h del domingo 27 de junio del 2027 es completamente
+                    <strong>GRATUITA</strong>. Recibir&eacute;is la llave de vuestra habitaci&oacute;n en la
+                    recepci&oacute;n del hotel. Cada habitaci&oacute;n tiene asignados los invitados.
+                  </p>
+                  <div class="actions-row">
+                    <a class="btn btn-secondary" id="palaceWebsiteLink"
+                      href="https://www.hotelpalaceteochava.com/el-palacete-de-la-ochava/#hotel" target="_blank"
+                      rel="noopener">Ver habitaciones / web del palacete</a>
+                    <a class="btn btn-ghost" id="palaceMapsLink" href="https://maps.app.goo.gl/fYbpdiKATBsvNCby6"
+                      target="_blank" rel="noopener">Cómo llegar</a>
+                  </div>
+                </div>
+              </article>
+            </div>
           </div>
         </div>
-      </article>
+      </div>
     </section>
 
     <section class="section container" id="lugar" data-reveal>
@@ -375,14 +417,13 @@
       <img class="gift-floating-image" src="assets/gallery/regalo_boda.png"
         alt="Lo m&aacute;s importante para nosotros es compartir este d&iacute;a con vosotros. Si quer&eacute;is hacernos un regalo, cualquier aportaci&oacute;n para nuestro futuro hogar ser&aacute; recibida con much&iacute;sima ilusi&oacute;n."
         loading="lazy" decoding="async" />
-      <div class="gift-mini-grid" aria-label="Opciones para el regalo">
-        <article class="gift-mini-card">
+      <article class="gift-envelope-card" aria-label="Opciones para el regalo">
+        <p class="gift-envelope-kicker">Opciones para el regalo</p>
+        <div class="gift-envelope-copy">
           <p>Habrá sobres disponibles durante el evento de la boda para los regalos en efectivo.</p>
-        </article>
-        <article class="gift-mini-card">
           <p>Si preferís realizar la aportación por transferencia, por favor, consultarnos el IBAN.</p>
-        </article>
-      </div>
+        </div>
+      </article>
     </section>
 
     <section class="section container" id="rsvp" data-reveal>
