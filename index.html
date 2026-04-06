@@ -55,8 +55,8 @@
       <div class="envelope-stage">
         <div class="gate-envelope" id="gateEnvelope">
           <img class="gate-frame is-visible" data-frame="closed" src="assets/gate/envelope-closed.png" alt="">
-          <img class="gate-frame" data-frame="opening" src="assets/gate/envelope-opening.png" alt="">
-          <img class="gate-frame" data-frame="open" src="assets/gate/envelope-open.png" alt="">
+          <img class="gate-frame" data-frame="opening" data-src="assets/gate/envelope-opening.png" alt="">
+          <img class="gate-frame" data-frame="open" data-src="assets/gate/envelope-open.png" alt="">
           <button id="gateSealHitArea" class="gate-seal-hit-area" type="button" aria-label="Abrir sobre"
             aria-describedby="gateSealTooltip"></button>
           <div id="gateSealHint" class="gate-seal-hint" aria-hidden="true">
@@ -73,15 +73,16 @@
     </section>
   </div>
 
-  <audio id="paperAudio" preload="auto" playsinline>
+  <audio id="paperAudio" preload="none" playsinline>
     <source src="assets/audio/paper-crinkle.mp3" type="audio/mpeg">
   </audio>
-  <audio id="ambientAudio" src="assets/audio/ambient-scroll.mp3" loop preload="auto" playsinline hidden></audio>
+  <audio id="ambientAudio" src="assets/audio/ambient-scroll.mp3" loop preload="none" playsinline hidden></audio>
 
   <main id="mainContent" class="site" hidden>
     <header class="hero" id="inicio">
       <div class="hero-video" aria-hidden="true">
-        <video id="heroVideo" muted playsinline preload="auto" poster="assets/gallery/palace-main.jpg">
+        <div id="heroVideoPreview" class="video-preview-frame hero-video-preview is-visible" aria-hidden="true"></div>
+        <video id="heroVideo" muted playsinline webkit-playsinline preload="metadata" poster="assets/gallery/hero-video-first-frame.jpg">
           <source src="assets/gallery/Save%20the%20date%20-%20video.mp4" type="video/mp4">
         </video>
       </div>
@@ -145,15 +146,17 @@
       <div class="couple-photos">
         <figure class="couple-photo-card couple-photo-card--video">
           <div class="couple-photo-window">
-            <video id="introVideoVic" muted playsinline webkit-playsinline preload="auto"
-              aria-label="Video estatua de Vic">
+            <video id="introVideoVic" muted playsinline webkit-playsinline preload="none"
+              poster="assets/gallery/intro-video-vic-poster.jpg" aria-label="Video estatua de Vic">
               <source src="assets/gallery/Video%20estatua%20Vic.mp4" type="video/mp4">
             </video>
+            <div id="introVideoVicPreview" class="video-preview-frame is-visible" aria-hidden="true"
+              style="background-image: url('assets/gallery/intro-video-vic-poster.jpg');"></div>
           </div>
         </figure>
         <figure class="couple-photo-card couple-photo-card--video">
           <div class="couple-photo-window">
-            <video id="introVideoCris" muted playsinline webkit-playsinline preload="auto"
+            <video id="introVideoCris" muted playsinline webkit-playsinline preload="none"
               poster="assets/gallery/intro-video-cris-poster.jpg" aria-label="Video estatua de Cris">
               <source src="assets/gallery/Video%20estatua%20Cris.mp4" type="video/mp4">
             </video>

@@ -282,6 +282,8 @@ const AMBIENT_UNLOCK_EVENT = "ambient-unlock-request";
 const AMBIENT_START_EVENT = "ambient-start-request";
 const HERO_VIDEO_START_EVENT = "hero-video-start-request";
 const HERO_VIDEO_PLAYING_EVENT = "hero-video-playing";
+const HERO_VIDEO_PREVIEW_STORAGE_PREFIX = "wedding.heroVideoPreview";
+const INTRO_VIDEO_PREVIEW_STORAGE_PREFIX = "wedding.introVideoPreview";
 const HERO_VIDEO_DELAY_AFTER_GATE_CLICK_MS = 6000;
 const GUEST_STAY_GIFT_OPENED_EVENT = "guest-stay-gift-opened";
 
@@ -292,6 +294,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupHandCursor();
   setupPetalsOverlay();
   hydrateStaticContent();
+  setupHeroVideoPreview("heroVideo", "heroVideoPreview");
   setupVideoFallback("heroVideo", "inicio");
   setupHeroVideoPlayback("heroVideo");
   setupIntroStatueVideoLoop();
@@ -731,10 +734,12 @@ function setupTitleCardFrameLoop() {
       const steps = Math.max(1, Math.floor(elapsed / frameDurationMs));
       frameIndex = (frameIndex + steps) % frameUrls.length;
       lastTimestamp += steps * frameDurationMs;
-      const nextFrame = preloadedFrames[frameIndex];
-      image.src = (nextFrame && nextFrame.complete && nextFrame.naturalWidth > 0)
-        ? nextFrame.src
-        : frameUrls[frameIndex];
+      const nextFrameUrl = frameUrls[frameIndex];
+
+      // Cuando la página se abre con file://, reutilizar nextFrame.src
+      // convierte la ruta en file:///... y Chrome puede marcarla como insegura.
+      // Mantenemos siempre la ruta relativa original en el <img> visible.
+      image.setAttribute("src", nextFrameUrl);
     }
 
     rafId = window.requestAnimationFrame(renderFrame);
@@ -787,6 +792,7 @@ function setupTitleCardFrameLoop() {
   document.addEventListener("visibilitychange", syncPlaybackState);
   window.addEventListener("pagehide", () => {
     stop();
+    preloadedFrames.length = 0;
     if (visibilityObserver) {
       visibilityObserver.disconnect();
       visibilityObserver = null;
@@ -1732,9 +1738,8 @@ function setupAmbientScrollAudio() {
   window.addEventListener(AMBIENT_START_EVENT, requestAmbientStart);
 
   ambientAudio.loop = true;
-  ambientAudio.preload = "auto";
+  ambientAudio.preload = "none";
   ambientAudio.volume = 0;
-  ambientAudio.load();
 
   window.addEventListener("pagehide", () => {
     removeUnlockListeners();
@@ -1937,8 +1942,8 @@ function setupLetterGate(gateEffects) {
     gateSealHitArea.setAttribute("aria-describedby", gateTooltip.id);
   }
 
-  preloadGateFrames(Object.values(frameMap).map((frame) => frame.src));
   showGateFrame("closed", frameMap);
+  scheduleGateFramePreload([frameMap.opening, frameMap.open]);
 
   const isGateVisible = () => {
     if (gate.hidden || gate.classList.contains("is-opened")) {
@@ -2029,9 +2034,6 @@ function setupLetterGate(gateEffects) {
   };
 
   appState.audioEnabled = paperCrinkleAudio.available;
-  if (paperCrinkleAudio.audio instanceof HTMLAudioElement) {
-    paperCrinkleAudio.audio.load();
-  }
 
   const paperPeakVolume = 0.46;
   const paperFadeInMs = 180;
@@ -2163,6 +2165,7 @@ function setupLetterGate(gateEffects) {
       return;
     }
 
+    preloadGateFrames(resolveGateFrameSources([frameMap.opening, frameMap.open]));
     hideGateHint();
     isOpening = true;
     appState.gateIsOpening = true;
@@ -2281,9 +2284,54 @@ function showGateFrame(name, frameMap) {
 
   Object.entries(frameMap).forEach(([key, node]) => {
     if (node) {
+      if (key === name) {
+        ensureImageElementSource(node);
+      }
       node.classList.toggle("is-visible", key === name);
     }
   });
+}
+
+function ensureImageElementSource(image) {
+  if (!(image instanceof HTMLImageElement)) {
+    return "";
+  }
+
+  const currentSrc = image.getAttribute("src") || "";
+  if (currentSrc) {
+    return currentSrc;
+  }
+
+  const deferredSrc = image.dataset.src || "";
+  if (!deferredSrc) {
+    return "";
+  }
+
+  image.setAttribute("src", deferredSrc);
+  return deferredSrc;
+}
+
+function resolveGateFrameSources(frameNodes) {
+  if (!Array.isArray(frameNodes)) {
+    return [];
+  }
+
+  return frameNodes
+    .map((frame) => ensureImageElementSource(frame))
+    .filter(Boolean);
+}
+
+function scheduleGateFramePreload(frameNodes) {
+  const preload = () => {
+    preloadGateFrames(resolveGateFrameSources(frameNodes));
+  };
+
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(preload, { timeout: 1600 });
+    return;
+  }
+
+  window.setTimeout(preload, 1200);
 }
 
 function preloadGateFrames(frameUrls) {
@@ -2460,6 +2508,200 @@ function setupVideoFallback(videoId, classTarget) {
       fallback();
     }
   }, 1200);
+}
+
+function setupHeroVideoPreview(videoId, previewId) {
+  const video = document.getElementById(videoId);
+  const preview = document.getElementById(previewId);
+  const hero = document.getElementById("inicio");
+
+  if (
+    !(video instanceof HTMLVideoElement)
+    || !(preview instanceof HTMLElement)
+    || !(hero instanceof HTMLElement)
+  ) {
+    return;
+  }
+
+  const sourceNode = video.querySelector("source");
+  const sourceKey = (
+    sourceNode instanceof HTMLSourceElement
+      ? (sourceNode.getAttribute("src") || "")
+      : (video.getAttribute("src") || "")
+  );
+  const posterKey = video.getAttribute("poster")
+    || preview.style.backgroundImage
+    || "";
+  const storageKey = `${HERO_VIDEO_PREVIEW_STORAGE_PREFIX}:${sourceKey || videoId}:${posterKey}`;
+
+  let playbackConfirmed = false;
+  let capturePromise = null;
+
+  const setPreviewVisible = (isVisible) => {
+    preview.classList.toggle("is-visible", isVisible);
+  };
+
+  const applyPreviewImage = (imageUrl) => {
+    if (!imageUrl) {
+      return false;
+    }
+
+    preview.style.backgroundImage = `url("${imageUrl}")`;
+    hero.style.setProperty("--hero-video-poster", `url("${imageUrl}")`);
+    video.poster = imageUrl;
+    return true;
+  };
+
+  const persistPreviewImage = (imageUrl) => {
+    if (!imageUrl || imageUrl.length > 2500000) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(storageKey, imageUrl);
+    } catch (_error) {
+      // Si no hay espacio o storage disponible, mantenemos la preview en memoria.
+    }
+  };
+
+  const restoreStoredPreview = () => {
+    try {
+      const storedPreview = window.localStorage.getItem(storageKey) || "";
+      return applyPreviewImage(storedPreview);
+    } catch (_error) {
+      return false;
+    }
+  };
+
+  const refreshPreviewVisibility = () => {
+    const nearStart = !Number.isFinite(video.currentTime) || video.currentTime <= 0.08;
+    const canPaintCurrentFrame = video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+    const shouldShow = !playbackConfirmed && (nearStart || !canPaintCurrentFrame);
+    setPreviewVisible(shouldShow);
+  };
+
+  const capturePreviewFrame = () => {
+    if (
+      video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
+      || video.videoWidth <= 0
+      || video.videoHeight <= 0
+    ) {
+      return false;
+    }
+
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        return false;
+      }
+
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      applyPreviewImage(dataUrl);
+      persistPreviewImage(dataUrl);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
+  const buildPreviewFrame = () => {
+    if (capturePromise) {
+      return capturePromise;
+    }
+
+    capturePromise = new Promise((resolve) => {
+      let isSettled = false;
+
+      const finalize = (didCapture) => {
+        if (isSettled) {
+          return;
+        }
+
+        isSettled = true;
+        capturePromise = null;
+        resolve(didCapture);
+      };
+
+      const attemptCapture = () => {
+        window.requestAnimationFrame(() => {
+          finalize(capturePreviewFrame());
+        });
+      };
+
+      if (
+        video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+        && video.videoWidth > 0
+        && video.videoHeight > 0
+      ) {
+        attemptCapture();
+        return;
+      }
+
+      const captureWhenReady = () => {
+        attemptCapture();
+      };
+
+      video.addEventListener("loadedmetadata", captureWhenReady, { once: true });
+      video.addEventListener("loadeddata", captureWhenReady, { once: true });
+      video.addEventListener("canplay", captureWhenReady, { once: true });
+
+      window.setTimeout(() => {
+        finalize(false);
+      }, 3000);
+    });
+
+    return capturePromise;
+  };
+
+  const markAsWaiting = () => {
+    playbackConfirmed = false;
+    refreshPreviewVisibility();
+  };
+
+  restoreStoredPreview();
+
+  video.addEventListener("loadstart", markAsWaiting);
+  video.addEventListener("loadedmetadata", () => {
+    markAsWaiting();
+    buildPreviewFrame().catch(() => {
+      // La capa seguirá usando el poster existente si no logramos capturar el frame.
+    });
+  });
+  video.addEventListener("loadeddata", () => {
+    markAsWaiting();
+    buildPreviewFrame().catch(() => {
+      // La capa seguirá usando el poster existente si no logramos capturar el frame.
+    });
+  });
+  video.addEventListener("canplay", refreshPreviewVisibility);
+  video.addEventListener("playing", () => {
+    playbackConfirmed = true;
+    setPreviewVisible(false);
+  });
+  video.addEventListener("pause", markAsWaiting);
+  video.addEventListener("waiting", markAsWaiting);
+  video.addEventListener("stalled", markAsWaiting);
+  video.addEventListener("suspend", refreshPreviewVisibility);
+  video.addEventListener("seeking", markAsWaiting);
+  video.addEventListener("seeked", refreshPreviewVisibility);
+  video.addEventListener("ended", markAsWaiting);
+
+  window.addEventListener(HERO_VIDEO_START_EVENT, () => {
+    markAsWaiting();
+    buildPreviewFrame().catch(() => {
+      // Si el frame no está disponible todavía, seguimos con el poster actual.
+    });
+  });
+
+  refreshPreviewVisibility();
+  buildPreviewFrame().catch(() => {
+    // En primera carga puede tardar o fallar; el poster por defecto cubre ese caso.
+  });
 }
 
 function setupVisibilityDrivenVideoPlayback({
@@ -2724,6 +2966,7 @@ function setupIntroStatueVideoLoop() {
   const section = document.getElementById("bienvenidaFotos");
   const vicVideo = document.getElementById("introVideoVic");
   let crisVideo = document.getElementById("introVideoCris");
+  const vicPreview = document.getElementById("introVideoVicPreview");
   const crisPreview = document.getElementById("introVideoCrisPreview");
 
   if (
@@ -2758,11 +3001,131 @@ function setupIntroStatueVideoLoop() {
   let crisLoopWatchdogId = 0;
   let lastCrisObservedTime = -1;
   let lastCrisProgressAt = 0;
+  let vicPreviewReady = false;
   let crisPreviewReady = Boolean(
     crisPreview instanceof HTMLElement
     && crisPreview.style.backgroundImage
   );
+  let vicPreviewPromise = null;
   let crisPreviewPromise = null;
+
+  const getVideoPreviewStorageKey = (video, previewElement, fallbackId) => {
+    if (!(video instanceof HTMLVideoElement)) {
+      return `${INTRO_VIDEO_PREVIEW_STORAGE_PREFIX}:${fallbackId}`;
+    }
+
+    const sourceNode = video.querySelector("source");
+    const sourceKey = (
+      sourceNode instanceof HTMLSourceElement
+        ? (sourceNode.getAttribute("src") || "")
+        : (video.getAttribute("src") || "")
+    );
+
+    const posterKey = video.getAttribute("poster")
+      || (previewElement instanceof HTMLElement ? previewElement.style.backgroundImage : "")
+      || "";
+
+    return `${INTRO_VIDEO_PREVIEW_STORAGE_PREFIX}:${sourceKey || fallbackId}:${posterKey}`;
+  };
+
+  const vicPreviewStorageKey = getVideoPreviewStorageKey(vicVideo, vicPreview, "introVideoVic");
+  const crisPreviewStorageKey = getVideoPreviewStorageKey(crisVideo, crisPreview, "introVideoCris");
+
+  const restoreStoredPreviewImage = (previewElement, video, storageKey) => {
+    if (!(previewElement instanceof HTMLElement)) {
+      return false;
+    }
+
+    try {
+      const storedPreview = window.localStorage.getItem(storageKey) || "";
+      if (!storedPreview) {
+        return false;
+      }
+
+      previewElement.style.backgroundImage = `url("${storedPreview}")`;
+      video.poster = storedPreview;
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
+  const persistPreviewImage = (storageKey, dataUrl) => {
+    if (!dataUrl || dataUrl.length > 2500000) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(storageKey, dataUrl);
+    } catch (_error) {
+      // Si el storage falla, mantenemos la preview en memoria y seguimos.
+    }
+  };
+
+  const setPreviewVisible = (previewElement, isVisible) => {
+    if (!(previewElement instanceof HTMLElement)) {
+      return;
+    }
+
+    previewElement.classList.toggle("is-visible", isVisible);
+  };
+
+  const applyPreviewImage = (previewElement, video, storageKey, dataUrl) => {
+    if (!(previewElement instanceof HTMLElement) || !dataUrl) {
+      return false;
+    }
+
+    previewElement.style.backgroundImage = `url("${dataUrl}")`;
+    video.poster = dataUrl;
+    persistPreviewImage(storageKey, dataUrl);
+    return true;
+  };
+
+  const capturePreviewFrame = (video, previewElement, storageKey, onReadyChange) => {
+    if (
+      !(video instanceof HTMLVideoElement)
+      || !(previewElement instanceof HTMLElement)
+      || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
+      || video.videoWidth <= 0
+      || video.videoHeight <= 0
+    ) {
+      return false;
+    }
+
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        return false;
+      }
+
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const didApply = applyPreviewImage(
+        previewElement,
+        video,
+        storageKey,
+        canvas.toDataURL("image/jpeg", 0.9)
+      );
+
+      if (didApply) {
+        onReadyChange(true);
+      }
+
+      return didApply;
+    } catch (_error) {
+      return false;
+    }
+  };
+
+  restoreStoredPreviewImage(vicPreview, vicVideo, vicPreviewStorageKey);
+  vicPreviewReady = Boolean(
+    vicPreview instanceof HTMLElement
+    && vicPreview.style.backgroundImage
+  );
+  restoreStoredPreviewImage(crisPreview, crisVideo, crisPreviewStorageKey);
 
   const safePause = (video) => {
     if (!video.paused) {
@@ -3109,6 +3472,10 @@ function setupIntroStatueVideoLoop() {
     const targetTime = Math.max(0, Number.isFinite(time) ? time : 0);
     const shouldSeekBeforePlay = video.ended || !isCurrentTimeNear(video, targetTime);
 
+    if (video === vicVideo) {
+      setVicPreviewVisible(true);
+    }
+
     if (video === crisVideo) {
       setCrisPreviewVisible(true);
       recordCrisPlaybackProgress();
@@ -3175,22 +3542,93 @@ function setupIntroStatueVideoLoop() {
     }, video === crisVideo ? 280 : 180);
   };
 
-  const setCrisPreviewVisible = (isVisible) => {
-    if (!(crisPreview instanceof HTMLElement)) {
-      return;
-    }
-
-    crisPreview.classList.toggle("is-visible", isVisible);
+  const setVicPreviewVisible = (isVisible) => {
+    setPreviewVisible(vicPreview, isVisible);
   };
 
-  const applyCrisPreviewImage = (dataUrl) => {
-    if (!(crisPreview instanceof HTMLElement) || !dataUrl) {
-      return;
+  const setCrisPreviewVisible = (isVisible) => {
+    setPreviewVisible(crisPreview, isVisible);
+  };
+
+  const buildVicPreviewFrame = () => {
+    if (!(vicPreview instanceof HTMLElement)) {
+      return Promise.resolve(false);
     }
 
-    crisPreview.style.backgroundImage = `url("${dataUrl}")`;
-    crisPreviewReady = true;
-    crisVideo.poster = dataUrl;
+    if (vicPreviewReady && vicPreview.style.backgroundImage) {
+      return Promise.resolve(true);
+    }
+
+    if (vicPreviewPromise) {
+      return vicPreviewPromise;
+    }
+
+    vicPreviewPromise = new Promise((resolve) => {
+      let isSettled = false;
+
+      const finalize = (didSucceed) => {
+        if (isSettled) {
+          return;
+        }
+
+        isSettled = true;
+        vicPreviewPromise = null;
+        resolve(didSucceed);
+      };
+
+      const captureCurrentFrame = () => {
+        window.requestAnimationFrame(() => {
+          finalize(capturePreviewFrame(
+            vicVideo,
+            vicPreview,
+            vicPreviewStorageKey,
+            (isReady) => {
+              vicPreviewReady = isReady;
+            }
+          ));
+        });
+      };
+
+      const captureAtPreviewTime = () => {
+        if (!vicVideo.paused && Number.isFinite(vicVideo.currentTime) && vicVideo.currentTime > 0.08) {
+          finalize(false);
+          return;
+        }
+
+        if (Math.abs(vicVideo.currentTime) <= 0.04) {
+          captureCurrentFrame();
+          return;
+        }
+
+        vicVideo.addEventListener("seeked", captureCurrentFrame, { once: true });
+        setCurrentTimeSafely(vicVideo, 0);
+      };
+
+      if (
+        vicVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+        && vicVideo.videoWidth > 0
+        && vicVideo.videoHeight > 0
+      ) {
+        captureAtPreviewTime();
+        return;
+      }
+
+      const tryCaptureLater = () => {
+        captureAtPreviewTime();
+      };
+
+      vicVideo.addEventListener("loadeddata", tryCaptureLater, { once: true });
+      vicVideo.addEventListener("canplay", tryCaptureLater, { once: true });
+      vicVideo.addEventListener("loadedmetadata", tryCaptureLater, { once: true });
+
+      window.setTimeout(() => {
+        if (!vicPreviewReady && vicPreviewPromise) {
+          finalize(false);
+        }
+      }, 3000);
+    });
+
+    return vicPreviewPromise;
   };
 
   const buildCrisPreviewFrame = () => {
@@ -3226,31 +3664,16 @@ function setupIntroStatueVideoLoop() {
 
       const captureCurrentFrame = () => {
         window.requestAnimationFrame(() => {
-          try {
-            const width = crisVideo.videoWidth || 0;
-            const height = crisVideo.videoHeight || 0;
-
-            if (width <= 0 || height <= 0) {
-              finalize(false);
-              return;
+          const didCapture = capturePreviewFrame(
+            crisVideo,
+            crisPreview,
+            crisPreviewStorageKey,
+            (isReady) => {
+              crisPreviewReady = isReady;
             }
+          );
 
-            const canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
-            const context = canvas.getContext("2d");
-
-            if (!context) {
-              finalize(false);
-              return;
-            }
-
-            context.drawImage(crisVideo, 0, 0, width, height);
-            applyCrisPreviewImage(canvas.toDataURL("image/jpeg", 0.9));
-            finalize(true);
-          } catch (_error) {
-            finalize(false);
-          }
+          finalize(didCapture);
         });
       };
 
@@ -3318,6 +3741,10 @@ function setupIntroStatueVideoLoop() {
       return;
     }
 
+    setVicPreviewVisible(true);
+    buildVicPreviewFrame().catch(() => {
+      // Si falla la captura seguiremos con el frame nativo del video.
+    });
     seekVideoReliably(video, 0, {
       allowReloadFallback: video.ended
     });
@@ -3557,6 +3984,34 @@ function setupIntroStatueVideoLoop() {
     refreshPlayback();
   };
 
+  const handleVicPlaying = () => {
+    setVicPreviewVisible(false);
+  };
+
+  const handleVicTimeUpdate = () => {
+    if (
+      cycleRunning
+      && Number.isFinite(vicVideo.currentTime)
+      && vicVideo.currentTime > 0.04
+    ) {
+      setVicPreviewVisible(false);
+    }
+
+    maybeStartCris();
+  };
+
+  const handleVicPause = () => {
+    if (!Number.isFinite(vicVideo.currentTime) || vicVideo.currentTime <= 0.08) {
+      setVicPreviewVisible(true);
+    }
+  };
+
+  const handleVicLoadedData = () => {
+    buildVicPreviewFrame().catch(() => {
+      // La preview es una mejora visual; no debe romper el bucle si falla.
+    });
+  };
+
   const handleCrisEnded = () => {
     if (!cycleRunning) {
       freezeAtStart(crisVideo);
@@ -3666,13 +4121,16 @@ function setupIntroStatueVideoLoop() {
     crisVideo.addEventListener("loadedmetadata", refreshPlayback);
   };
 
-  vicVideo.addEventListener("timeupdate", maybeStartCris);
+  vicVideo.addEventListener("timeupdate", handleVicTimeUpdate);
+  vicVideo.addEventListener("pause", handleVicPause);
   vicVideo.addEventListener("ended", handleVicEnded);
+  vicVideo.addEventListener("playing", handleVicPlaying);
   attachCrisVideoListeners();
   vicVideo.addEventListener("ratechange", () => {
     enforcePlaybackRate(vicVideo);
   });
 
+  vicVideo.addEventListener("loadeddata", handleVicLoadedData);
   vicVideo.addEventListener("loadeddata", refreshPlayback);
   vicVideo.addEventListener("canplay", refreshPlayback);
   vicVideo.addEventListener("loadedmetadata", refreshPlayback);
@@ -3710,6 +4168,9 @@ function setupIntroStatueVideoLoop() {
 
   applyPlaybackDefaults(vicVideo);
   applyPlaybackDefaults(crisVideo);
+  buildVicPreviewFrame().catch(() => {
+    // La preview es una mejora visual; no debe romper el bucle si falla.
+  });
   buildCrisPreviewFrame().catch(() => {
     // La preview es una mejora visual; no debe romper el bucle si falla.
   });

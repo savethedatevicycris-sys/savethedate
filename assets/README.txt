@@ -1,8 +1,9 @@
 Place your real media files in these paths:
 
-- assets/hero.mp4
-- assets/door.mp4
-- assets/poster.jpg
+- assets/gallery/Save the date - video.mp4
+- assets/gallery/hero-video-first-frame.jpg
+- assets/gallery/intro-video-vic-poster.jpg
+- assets/gallery/intro-video-cris-poster.jpg
 - assets/logo.png (logo/monograma del gate)
 
 Gate sequence images:
