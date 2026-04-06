@@ -9,7 +9,7 @@ const PETAL_IMAGE_PATH = "assets/gallery/gold-petal.png";
   Cambia aquí:
   - Fecha/hora: eventStartISO y eventEndISO
   - Palacete y mapas: eventLocationName, eventAddress, mapUrl, palaceWebsiteUrl
-  - Formularios Google: rsvpEmbedUrl/rsvpViewUrl y qnaEmbedUrl/qnaViewUrl
+  - Formularios Google: rsvpEmbedUrl/rsvpViewUrl
   - Imágenes: galleryImages[*].src y services[*].image
 */
 const weddingConfig = {
@@ -29,8 +29,6 @@ const weddingConfig = {
   bizum: "+34 685 255 645",
   rsvpEmbedUrl: "https://forms.gle/LdHmKisjTYQd3Kzw9",
   rsvpViewUrl: "https://forms.gle/LdHmKisjTYQd3Kzw9",
-  qnaEmbedUrl: "https://forms.gle/TtG5hD8NcPTPccYA8",
-  qnaViewUrl: "https://forms.gle/TtG5hD8NcPTPccYA8",
   schedule: {
     saturday: [
       {
@@ -6544,10 +6542,8 @@ function setupCopyButtons() {
 function setupForms() {
   const shouldEmbedForms = window.location.protocol !== "file:";
   const rsvpUrls = resolveGoogleFormUrls(weddingConfig.rsvpEmbedUrl, weddingConfig.rsvpViewUrl);
-  const qnaUrls = resolveGoogleFormUrls(weddingConfig.qnaEmbedUrl, weddingConfig.qnaViewUrl);
 
   setEmbedAndLink("rsvpEmbed", shouldEmbedForms ? rsvpUrls.embedUrl : "", "rsvpViewLink", rsvpUrls.viewUrl);
-  setEmbedAndLink("qnaEmbed", shouldEmbedForms ? qnaUrls.embedUrl : "", "qnaViewLink", qnaUrls.viewUrl);
 }
 
 function setEmbedAndLink(embedId, embedUrl, linkId, linkUrl) {

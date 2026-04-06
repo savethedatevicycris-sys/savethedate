@@ -3939,6 +3939,14 @@ body.theme-light .palace-discovery-section {
   isolation: isolate;
 }
 
+#regalos {
+  margin-bottom: clamp(1rem, 1.8vw, 1.35rem);
+}
+
+#regalos + #rsvp {
+  margin-top: clamp(1rem, 1.8vw, 1.35rem);
+}
+
 body.theme-light .section.gift-image-section,
 body.theme-light .gift-image-section {
   border: 0 !important;
