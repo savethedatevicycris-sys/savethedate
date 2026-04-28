@@ -1,15 +1,18 @@
 :root {
   --bg-ivory: #f6f1e8;
+  --white-soft: #fcf8f1;
   --paper: var(--bg-ivory);
   --page-bg: var(--paper);
   --ink: #2a2218;
   --ink-muted: #5f513f;
   --gold: #8b7348;
   --gold-strong: #a78b5a;
+  --forest: #314435;
+  --forest-strong: #24352a;
   --line: rgba(139, 115, 72, 0.24);
   --shadow-strong: 0 18px 40px rgba(42, 34, 24, 0.1);
   --font-display: "Cinzel", serif;
-  --font-body: "Crimson Pro", serif;
+  --font-body: "Source Sans 3", sans-serif;
 }
 
 * {
@@ -26,10 +29,12 @@ body {
 body {
   min-height: 100vh;
   font-family: var(--font-body);
-  font-style: italic;
+  font-style: normal;
   color: var(--ink);
   line-height: 1.6;
   overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -101,6 +106,7 @@ p {
   justify-content: center;
   cursor: pointer;
   font: inherit;
+  font-style: normal;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--gold);
@@ -124,13 +130,16 @@ a:focus-visible {
 }
 
 .btn-primary {
-  color: var(--gold);
-  background: var(--paper);
-  border-color: var(--line);
+  color: var(--white-soft);
+  background: var(--forest);
+  border-color: var(--forest);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 10px 20px rgba(140, 107, 46, 0.14);
+  background: var(--forest-strong);
+  color: var(--white-soft);
+  border-color: var(--forest-strong);
+  box-shadow: 0 12px 24px rgba(36, 53, 42, 0.2);
 }
 
 .btn-secondary {

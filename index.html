@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&amp;family=Great+Vibes&amp;display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&amp;family=Great+Vibes&amp;family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&amp;display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script defer src="script.js"></script>
@@ -90,13 +90,15 @@
 
       <div class="hero-inner container">
         <div class="burger-nav" id="burgerNav">
-          <button class="burger-toggle" id="burgerToggle" type="button" aria-label="Abrir menú" aria-expanded="false"
+          <button class="burger-toggle" id="burgerToggle" type="button" aria-label="Abrir menú de secciones"
+            aria-expanded="false"
             aria-controls="burgerMenuPanel">
             <span class="burger-toggle-icon" aria-hidden="true">
               <span class="burger-toggle-line"></span>
               <span class="burger-toggle-line"></span>
               <span class="burger-toggle-line"></span>
             </span>
+            <span class="burger-toggle-label">Menú</span>
           </button>
           <nav class="hero-nav burger-menu-panel" id="burgerMenuPanel" aria-label="Navegación principal">
             <a href="#bienvenida">CARTA DE INVITACIÓN</a>
@@ -119,7 +121,7 @@
     <section class="section container title-card" id="titleCard" aria-label="Tarjeta de título" data-reveal>
       <div class="card">
         <div class="title-card-media">
-          <img id="titleCardImage" src="assets/gallery/hiedras_loop_frames/frame_00.png" alt="Vic & Cris"
+          <img id="titleCardImage" src="assets/gallery/title-vic-cris.png" alt="Vic & Cris"
             class="title-card-img" loading="eager" draggable="false">
           <canvas id="titleCardWritingCanvas" class="title-card-writing-canvas" aria-hidden="true"></canvas>
         </div>
@@ -148,7 +150,7 @@
           <div class="couple-photo-window">
             <video id="introVideoVic" muted playsinline webkit-playsinline preload="none"
               poster="assets/gallery/intro-video-vic-poster.jpg" aria-label="Video estatua de Vic">
-              <source src="assets/gallery/Video%20estatua%20Vic.mp4" type="video/mp4">
+              <source data-src="assets/gallery/Video%20estatua%20Vic.mp4" type="video/mp4">
             </video>
             <div id="introVideoVicPreview" class="video-preview-frame is-visible" aria-hidden="true"
               style="background-image: url('assets/gallery/intro-video-vic-poster.jpg');"></div>
@@ -158,7 +160,7 @@
           <div class="couple-photo-window">
             <video id="introVideoCris" muted playsinline webkit-playsinline preload="none"
               poster="assets/gallery/intro-video-cris-poster.jpg" aria-label="Video estatua de Cris">
-              <source src="assets/gallery/Video%20estatua%20Cris.mp4" type="video/mp4">
+              <source data-src="assets/gallery/Video%20estatua%20Cris.mp4" type="video/mp4">
             </video>
             <div id="introVideoCrisPreview" class="video-preview-frame is-visible" aria-hidden="true"
               style="background-image: url('assets/gallery/intro-video-cris-poster.jpg');"></div>
@@ -239,6 +241,7 @@
               <small>Segundos</small>
             </article>
           </div>
+          <p class="countdown-note">Cuenta atrás calculada con la hora peninsular española (Europe/Madrid).</p>
         </div>
       </div>
     </section>
@@ -265,7 +268,8 @@
         <div class="actions-row">
           <a class="btn btn-secondary" id="mapsLink" href="https://maps.app.goo.gl/fYbpdiKATBsvNCby6" target="_blank"
             rel="noopener">Ver en Google Maps</a>
-          <button class="btn btn-ghost" type="button" data-copy-key="eventAddress">Copiar dirección</button>
+          <button class="btn btn-ghost" type="button" data-copy-key="eventAddress"
+            data-copy-success-label="¡Copiado! ✓">Copiar dirección</button>
         </div>
       </div>
     </section>
@@ -365,7 +369,7 @@
                     Valdilecha, Madrid</p>
                   <p class="palace-stay-note">
                     El alojamiento y la estancia en el hotel desde las 15:00h del s&aacute;bado 26 de junio del 2027
-                    hasta las 14:00h del domingo 27 de junio del 2027 es completamente
+                    hasta las 13:00h del domingo 27 de junio del 2027 es completamente
                     <strong>GRATUITA</strong>. Recibir&eacute;is la llave de vuestra habitaci&oacute;n en la
                     recepci&oacute;n del hotel. Cada habitaci&oacute;n tiene asignados los invitados.
                   </p>
@@ -432,7 +436,7 @@
     <section class="section container" id="rsvp" data-reveal>
       <p class="section-kicker">Confirma tu asistencia</p>
       <h2>Confirmación de asistencia a la boda</h2>
-      <p class="muted">Si el formulario no carga, ábrelo en una pestaña nueva.</p>
+      <p class="muted" id="rsvpStatus">Puedes confirmarlo aquí mismo o abrir el formulario en una pestaña nueva.</p>
       <div class="actions-row">
         <a class="btn btn-secondary" id="rsvpViewLink" href="#" target="_blank" rel="noopener">Abrir formulario de
           confirmación</a>
@@ -447,12 +451,7 @@
     <section class="section container" id="faq" data-reveal>
       <p class="section-kicker">FAQ</p>
       <h2>Preguntas frecuentes</h2>
-      <button class="faq-toggle-btn" id="faqToggleBtn" type="button" aria-expanded="false" aria-controls="faqListWrap">
-        Haz clic aquí para desplegar el listado de preguntas frecuentes
-      </button>
-      <div class="faq-list-wrap" id="faqListWrap" hidden>
-        <div class="faq-list" id="faqList"></div>
-      </div>
+      <div class="faq-list" id="faqList"></div>
     </section>
 
     <footer class="section signature container" data-reveal>
@@ -461,6 +460,7 @@
       <img class="signature-seal" src="assets/gallery/seal-red.png" alt="Sello rojo decorativo de Vic y Cris"
         loading="lazy">
     </footer>
+
   </main>
 
   <aside class="lightbox" id="lightbox" hidden>

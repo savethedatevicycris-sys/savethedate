@@ -17,7 +17,7 @@ const weddingConfig = {
   eventTitle: "Boda de Vic & Cris",
   eventDescription: "Ceremonia y celebración de boda de Vic & Cris.",
   eventStartISO: "2027-06-26T19:00:00+02:00",
-  eventEndISO: "2027-06-27T14:00:00+02:00",
+  eventEndISO: "2027-06-27T13:00:00+02:00",
   heroDateLabel: "Sábado, 26 de Junio de 2027",
   calendarTimezone: "Europe/Madrid",
   eventLocationName: "Hotel Palacete De La Ochava",
@@ -69,7 +69,7 @@ const weddingConfig = {
         description: "Piscina de 10:00 a 12:30h."
       },
       {
-        time: "14:00",
+        time: "13:00",
         title: "Check-out",
         description: "Check-out y desalojo de habitaciones."
       }
@@ -78,19 +78,19 @@ const weddingConfig = {
   faqs: [
     {
       question: "¿Tengo que pagar algo para hospedarme en el palacete?",
-      answer: "No, hemos querido tener un detalle con todos vosotros y estáis todos invitados con una habitación incluida."
+      answer: "No, hemos querido tener un detalle con todos vosotros y estáis todos invitados con una habitación incluida. El check-in es a las 15:00h del sábado 26/06/2027 y el check-out a las 13:00h del domingo 27/06/2027. Este alojamiento es completamente gratuito para los invitados a la boda."
     },
     {
       question: "¿Cuál es el horario de entrada al palacete y la salida?",
-      answer: "La entrada al palacete es a partir de las 15:00h del sábado 26 de junio de 2027. La salida es al día siguiente a las 14:00h del domingo 27 de junio de 2027."
+      answer: "La entrada al palacete es a partir de las 15:00h del sábado 26 de junio de 2027. La salida es al día siguiente a las 13:00h del domingo 27 de junio de 2027."
     },
     {
       question: "¿Como se cuál es la habitación que tendré asignada?",
-      answer: "Una vez sepamos quiénes venís, os asignaremos habitación y os haremos llegar la información. No obstante, al llegar al palacete os acompañarán a vuestra habitación y os darán la llave, así que no os preocupéis por nada. Si tenéis alguna petición especial para la habitación, podéis indicárnoslo en el RSVP."
+      answer: "Una vez sepamos quiénes venís confirmado, os asignaremos habitación y os haremos llegar la información a cada uno de vosotros. No obstante, al llegar al palacete os darán la llave de vuestra habitación, así que no os preocupéis por nada más que disfrutar. Si tenéis alguna petición especial para la habitación, podéis indicárnoslo en el el cuestionario de la invitación o hacernoslo llegar por WhatsApp"
     },
     {
       question: "¿Hay dress code?",
-      answer: "Sí, elegante clásico. Recomendamos tonos neutros y calzado cómodo para exteriores."
+      answer: "Sí, elegante clásico. Recomendamos calzado cómodo para exteriores. Recordar que siempre tendréis disponible vuestra habitación."
     },
     {
       question: "¿Puedo ir con acompañante?",
@@ -102,7 +102,7 @@ const weddingConfig = {
     },
     {
       question: "¿Hay aparcamiento en el palacete?",
-      answer: "Sí, hay zona de aparcamiento reservada para invitados."
+      answer: "Sí, hay zona de aparcamiento reservada para invitados. Es parking vigilado 24h durante toda la estancia en el Palacete."
     },
     {
       question: "¿Como funciona el servicio de peluquería y maquillaje?",
@@ -295,6 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupHeroVideoPreview("heroVideo", "heroVideoPreview");
   setupVideoFallback("heroVideo", "inicio");
   setupHeroVideoPlayback("heroVideo");
+  setupDeferredIntroVideos();
   setupIntroStatueVideoLoop();
   setupVideoFallback("doorVideo", "page-thanks");
 
@@ -682,9 +683,13 @@ function setupTitleCardFrameLoop() {
     return;
   }
 
-  const frameCount = 12;
-  const frameDurationMs = 120;
-  const frameBasePath = "assets/gallery/hiedras_loop_frames";
+  const frameBasePath = image.dataset.frameBasePath || "";
+  if (!frameBasePath) {
+    return;
+  }
+
+  const frameCount = Number(image.dataset.frameCount || 12);
+  const frameDurationMs = Number(image.dataset.frameDurationMs || 120);
   const frameUrls = Array.from({ length: frameCount }, (_, index) => {
     const paddedIndex = String(index).padStart(2, "0");
     return `${frameBasePath}/frame_${paddedIndex}.png`;
@@ -1197,6 +1202,12 @@ function setupTitleCardZoomReveal() {
 
 function setupPetalsOverlay() {
   if (!ENABLE_PETALS || reducedMotionQuery.matches) {
+    return;
+  }
+
+  const mobileLike = window.matchMedia("(max-width: 768px)").matches
+    || window.matchMedia("(pointer: coarse)").matches;
+  if (mobileLike) {
     return;
   }
 
@@ -1780,10 +1791,116 @@ function setupBurgerMenu() {
   }
 
   const desktopHoverQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+  const menuLinks = [...menuPanel.querySelectorAll('a[href^="#"]')].filter((link) => link instanceof HTMLAnchorElement);
+  const linkEntries = menuLinks
+    .map((link) => {
+      const targetId = decodeURIComponent(link.hash.replace(/^#/, ""));
+      const target = targetId ? document.getElementById(targetId) : null;
+      return target instanceof HTMLElement ? { link, target } : null;
+    })
+    .filter((entry) => entry !== null);
   let isOpen = false;
   let closeTimerId = 0;
+  let activeUpdateFrame = 0;
 
   const isDesktopHoverMode = () => desktopHoverQuery.matches;
+
+  const setActiveMenuLink = (activeId) => {
+    linkEntries.forEach(({ link, target }) => {
+      const isActive = Boolean(activeId) && target.id === activeId;
+      if (isActive) {
+        link.setAttribute("aria-current", "location");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+  };
+
+  const getRenderableLinkEntries = () => linkEntries.filter(({ target }) => {
+    if (!(target instanceof HTMLElement) || !target.isConnected || target.hidden) {
+      return false;
+    }
+
+    const computedStyle = window.getComputedStyle(target);
+    if (computedStyle.display === "none" || computedStyle.visibility === "hidden") {
+      return false;
+    }
+
+    const rect = target.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  });
+
+  const getActiveSectionId = () => {
+    const renderableEntries = getRenderableLinkEntries();
+    if (!renderableEntries.length) {
+      return "";
+    }
+
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const activationOffset = Math.max(120, Math.min(viewportHeight * 0.38, 260));
+    let activeId = renderableEntries[0].target.id;
+    let intersectingId = "";
+    let lastBeforeLineId = renderableEntries[0].target.id;
+    let bestVisibleId = "";
+    let bestVisibleHeight = 0;
+    let bestVisibleDistance = Number.POSITIVE_INFINITY;
+
+    renderableEntries.forEach(({ target }) => {
+      const rect = target.getBoundingClientRect();
+      const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+      const targetCenter = rect.top + (rect.height / 2);
+      const distanceToActivationOffset = Math.abs(targetCenter - activationOffset);
+
+      if (
+        visibleHeight > bestVisibleHeight
+        || (
+          Math.abs(visibleHeight - bestVisibleHeight) <= 1
+          && distanceToActivationOffset < bestVisibleDistance
+        )
+      ) {
+        bestVisibleId = target.id;
+        bestVisibleHeight = visibleHeight;
+        bestVisibleDistance = distanceToActivationOffset;
+      }
+
+      if (rect.top <= activationOffset && rect.bottom >= activationOffset) {
+        intersectingId = target.id;
+      }
+
+      if (rect.top <= activationOffset) {
+        lastBeforeLineId = target.id;
+      }
+    });
+
+    if (intersectingId) {
+      activeId = intersectingId;
+    } else if (bestVisibleId && bestVisibleHeight > 0) {
+      activeId = bestVisibleId;
+    } else {
+      activeId = lastBeforeLineId;
+    }
+
+    const scrollBottom = window.scrollY + window.innerHeight;
+    const documentHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    if (scrollBottom >= documentHeight - 24) {
+      return renderableEntries[renderableEntries.length - 1].target.id;
+    }
+
+    return activeId;
+  };
+
+  const updateActiveMenuLink = () => {
+    activeUpdateFrame = 0;
+    setActiveMenuLink(getActiveSectionId());
+  };
+
+  const scheduleActiveMenuLinkUpdate = () => {
+    if (activeUpdateFrame) {
+      return;
+    }
+
+    activeUpdateFrame = window.requestAnimationFrame(updateActiveMenuLink);
+  };
 
   const setMenuOpen = (nextOpen) => {
     const normalized = Boolean(nextOpen);
@@ -1867,6 +1984,23 @@ function setupBurgerMenu() {
     }
   });
 
+  menuLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      const targetId = decodeURIComponent(link.hash.replace(/^#/, ""));
+      if (!targetId) {
+        return;
+      }
+
+      setActiveMenuLink(targetId);
+      window.setTimeout(scheduleActiveMenuLinkUpdate, 160);
+    });
+  });
+
+  window.addEventListener("scroll", scheduleActiveMenuLinkUpdate, { passive: true });
+  window.addEventListener("resize", scheduleActiveMenuLinkUpdate);
+  window.addEventListener("hashchange", scheduleActiveMenuLinkUpdate);
+  scheduleActiveMenuLinkUpdate();
+
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !isDesktopHoverMode()) {
       return;
@@ -1888,6 +2022,12 @@ function setupBurgerMenu() {
   window.addEventListener("pagehide", () => {
     clearCloseTimer();
     closeMenu();
+    if (activeUpdateFrame) {
+      window.cancelAnimationFrame(activeUpdateFrame);
+    }
+    window.removeEventListener("scroll", scheduleActiveMenuLinkUpdate);
+    window.removeEventListener("resize", scheduleActiveMenuLinkUpdate);
+    window.removeEventListener("hashchange", scheduleActiveMenuLinkUpdate);
 
     if (typeof desktopHoverQuery.removeEventListener === "function") {
       desktopHoverQuery.removeEventListener("change", onInputModeChange);
@@ -2482,6 +2622,108 @@ async function playAudioResource(resource, options = {}) {
   }
 }
 
+function getMediaSourceAttributeValue(sourceNode) {
+  if (!(sourceNode instanceof HTMLSourceElement)) {
+    return "";
+  }
+
+  return sourceNode.getAttribute("src")
+    || sourceNode.dataset.src
+    || "";
+}
+
+function hasAssignedMediaSource(media) {
+  if (!(media instanceof HTMLMediaElement)) {
+    return false;
+  }
+
+  if (media.getAttribute("src")) {
+    return true;
+  }
+
+  return Array.from(media.querySelectorAll("source"))
+    .some((sourceNode) => getMediaSourceAttributeValue(sourceNode).length > 0 && Boolean(sourceNode.getAttribute("src")));
+}
+
+function hydrateDeferredMediaSources(media) {
+  if (!(media instanceof HTMLMediaElement) || media.dataset.mediaHydrated === "true") {
+    return false;
+  }
+
+  let didHydrate = false;
+
+  const deferredMediaSrc = media.dataset.src || "";
+  if (deferredMediaSrc && !media.getAttribute("src")) {
+    media.setAttribute("src", deferredMediaSrc);
+    didHydrate = true;
+  }
+
+  Array.from(media.querySelectorAll("source"))
+    .forEach((sourceNode) => {
+      if (!(sourceNode instanceof HTMLSourceElement) || sourceNode.getAttribute("src")) {
+        return;
+      }
+
+      const deferredSource = sourceNode.dataset.src || "";
+      if (!deferredSource) {
+        return;
+      }
+
+      sourceNode.setAttribute("src", deferredSource);
+      didHydrate = true;
+    });
+
+  if (didHydrate) {
+    media.dataset.mediaHydrated = "true";
+    try {
+      media.load();
+    } catch (_error) {
+      // Algunos navegadores pueden bloquear load() hasta la siguiente interacción.
+    }
+  }
+
+  return didHydrate;
+}
+
+function setupDeferredIntroVideos() {
+  const section = document.getElementById("bienvenidaFotos");
+  const videos = [
+    document.getElementById("introVideoVic"),
+    document.getElementById("introVideoCris")
+  ].filter((node) => node instanceof HTMLVideoElement);
+
+  if (!(section instanceof HTMLElement) || !videos.length) {
+    return;
+  }
+
+  const hydrateAll = () => {
+    videos.forEach((video) => hydrateDeferredMediaSources(video));
+  };
+
+  if (typeof window.IntersectionObserver !== "function") {
+    hydrateAll();
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    const shouldHydrate = entries.some((entry) => entry.isIntersecting || entry.intersectionRatio > 0);
+    if (!shouldHydrate) {
+      return;
+    }
+
+    hydrateAll();
+    observer.disconnect();
+  }, {
+    rootMargin: "240px 0px 240px 0px",
+    threshold: 0.01
+  });
+
+  observer.observe(section);
+  window.addEventListener("pagehide", () => {
+    observer.disconnect();
+  }, { once: true });
+}
+
 function setupVideoFallback(videoId, classTarget) {
   const video = document.getElementById(videoId);
   if (!video) {
@@ -2524,7 +2766,7 @@ function setupHeroVideoPreview(videoId, previewId) {
   const sourceNode = video.querySelector("source");
   const sourceKey = (
     sourceNode instanceof HTMLSourceElement
-      ? (sourceNode.getAttribute("src") || "")
+      ? getMediaSourceAttributeValue(sourceNode)
       : (video.getAttribute("src") || "")
   );
   const posterKey = video.getAttribute("poster")
@@ -2975,8 +3217,9 @@ function setupIntroStatueVideoLoop() {
     return;
   }
 
-  const vicTriggerSeconds = 10;
-  const crisPreviewSeconds = 0;
+  const vicStartSeconds = 3;
+  const vicTriggerSeconds = 6;
+  const crisPreviewSeconds = 2;
   const visibilityThreshold = 0.22;
   const visibilityRootMargin = "0px 0px -10% 0px";
   const prefersAggressiveCrisRestart = typeof window.matchMedia === "function"
@@ -3015,7 +3258,7 @@ function setupIntroStatueVideoLoop() {
     const sourceNode = video.querySelector("source");
     const sourceKey = (
       sourceNode instanceof HTMLSourceElement
-        ? (sourceNode.getAttribute("src") || "")
+        ? getMediaSourceAttributeValue(sourceNode)
         : (video.getAttribute("src") || "")
     );
 
@@ -3144,6 +3387,10 @@ function setupIntroStatueVideoLoop() {
   };
 
   const safePlay = (video) => {
+    if (!hasAssignedMediaSource(video)) {
+      return;
+    }
+
     applyPlaybackDefaults(video);
 
     if (!video.paused) {
@@ -3181,6 +3428,7 @@ function setupIntroStatueVideoLoop() {
     return Math.min(time, Math.max(0, video.duration - 0.08));
   };
 
+  const getVicStartTime = () => getPreviewTime(vicVideo, vicStartSeconds);
   const getCrisStartTime = () => getPreviewTime(crisVideo, crisPreviewSeconds);
 
   const setCurrentTimeSafely = (video, time) => {
@@ -3465,6 +3713,10 @@ function setupIntroStatueVideoLoop() {
   };
 
   const playFromTime = (video, time) => {
+    if (!hasAssignedMediaSource(video)) {
+      return;
+    }
+
     applyPlaybackDefaults(video);
 
     const targetTime = Math.max(0, Number.isFinite(time) ? time : 0);
@@ -3553,6 +3805,10 @@ function setupIntroStatueVideoLoop() {
       return Promise.resolve(false);
     }
 
+    if (!hasAssignedMediaSource(vicVideo)) {
+      return Promise.resolve(false);
+    }
+
     if (vicPreviewReady && vicPreview.style.backgroundImage) {
       return Promise.resolve(true);
     }
@@ -3593,13 +3849,15 @@ function setupIntroStatueVideoLoop() {
           return;
         }
 
-        if (Math.abs(vicVideo.currentTime) <= 0.04) {
+        const previewTime = getVicStartTime();
+
+        if (Math.abs(vicVideo.currentTime - previewTime) <= 0.04) {
           captureCurrentFrame();
           return;
         }
 
         vicVideo.addEventListener("seeked", captureCurrentFrame, { once: true });
-        setCurrentTimeSafely(vicVideo, 0);
+        setCurrentTimeSafely(vicVideo, previewTime);
       };
 
       if (
@@ -3631,6 +3889,10 @@ function setupIntroStatueVideoLoop() {
 
   const buildCrisPreviewFrame = () => {
     if (!(crisPreview instanceof HTMLElement)) {
+      return Promise.resolve(false);
+    }
+
+    if (!hasAssignedMediaSource(crisVideo)) {
       return Promise.resolve(false);
     }
 
@@ -3723,6 +3985,15 @@ function setupIntroStatueVideoLoop() {
     applyPlaybackDefaults(video);
     safePause(video);
 
+    if (!hasAssignedMediaSource(video)) {
+      if (video === crisVideo) {
+        setCrisPreviewVisible(true);
+      } else {
+        setVicPreviewVisible(true);
+      }
+      return;
+    }
+
     if (video === crisVideo) {
       seekVideoReliably(video, getCrisStartTime(), {
         allowReloadFallback: true,
@@ -3743,7 +4014,7 @@ function setupIntroStatueVideoLoop() {
     buildVicPreviewFrame().catch(() => {
       // Si falla la captura seguiremos con el frame nativo del video.
     });
-    seekVideoReliably(video, 0, {
+    seekVideoReliably(video, getVicStartTime(), {
       allowReloadFallback: video.ended
     });
   };
@@ -3924,7 +4195,7 @@ function setupIntroStatueVideoLoop() {
         freezeAtEnd(vicVideo);
       } else if (vicNeedsRestart) {
         vicNeedsRestart = false;
-        playFromTime(vicVideo, 0);
+        playFromTime(vicVideo, getVicStartTime());
       } else if (isStartPending(vicVideo)) {
         return;
       } else {
@@ -3938,7 +4209,7 @@ function setupIntroStatueVideoLoop() {
       freezeAtEnd(vicVideo);
     } else if (vicNeedsRestart) {
       vicNeedsRestart = false;
-      playFromTime(vicVideo, 0);
+      playFromTime(vicVideo, getVicStartTime());
     } else if (!isStartPending(vicVideo)) {
       safePlay(vicVideo);
     }
@@ -4221,7 +4492,7 @@ function setupCountdown() {
     return;
   }
 
-  const targetDate = new Date(weddingConfig.eventStartISO).getTime();
+  const targetDate = Date.parse(weddingConfig.eventStartISO);
   if (Number.isNaN(targetDate)) {
     return;
   }
@@ -4233,6 +4504,16 @@ function setupCountdown() {
     seconds: countdown.querySelector('[data-unit="seconds"]')
   };
   const secondsCard = nodes.seconds ? nodes.seconds.closest(".count-card") : null;
+  let timeoutId = 0;
+
+  const clearTimer = () => {
+    if (!timeoutId) {
+      return;
+    }
+
+    window.clearTimeout(timeoutId);
+    timeoutId = 0;
+  };
 
   const tick = () => {
     const diff = Math.max(0, targetDate - Date.now());
@@ -4251,11 +4532,17 @@ function setupCountdown() {
     if (secondsCard instanceof HTMLElement && !reducedMotionQuery.matches) {
       triggerCountdownSecondPulse(secondsCard);
     }
+    clearTimer();
+    timeoutId = window.setTimeout(tick, 1000 - (Date.now() % 1000) + 12);
+    appState.countdownTimer = timeoutId;
   };
 
+  if (appState.countdownTimer) {
+    window.clearTimeout(appState.countdownTimer);
+  }
   tick();
-  clearInterval(appState.countdownTimer);
-  appState.countdownTimer = window.setInterval(tick, 1000);
+
+  window.addEventListener("pagehide", clearTimer, { once: true });
 }
 
 function setupStopwatchSecondHand() {
@@ -6429,6 +6716,7 @@ function renderFaq() {
   weddingConfig.faqs.forEach((item, index) => {
     const article = document.createElement("details");
     article.className = "faq-item";
+    article.open = index === 0;
 
     const questionId = `faq-question-${index + 1}`;
     const answerId = `faq-answer-${index + 1}`;
@@ -6454,8 +6742,6 @@ function setupFaqSectionToggle() {
   const button = document.getElementById("faqToggleBtn");
   const listWrap = document.getElementById("faqListWrap");
   const faqList = document.getElementById("faqList");
-  const collapsedLabel = "Haz clic aquí para desplegar el listado de preguntas frecuentes";
-  const expandedLabel = "Haz clic aquí para ocultar el listado de preguntas frecuentes";
 
   if (
     !(button instanceof HTMLButtonElement)
@@ -6465,23 +6751,8 @@ function setupFaqSectionToggle() {
     return;
   }
 
-  if (!faqList.children.length) {
-    button.hidden = true;
-    return;
-  }
-
-  const setExpanded = (expanded) => {
-    button.setAttribute("aria-expanded", String(expanded));
-    button.textContent = expanded ? expandedLabel : collapsedLabel;
-    listWrap.hidden = !expanded;
-  };
-
-  setExpanded(false);
-
-  button.addEventListener("click", () => {
-    const isExpanded = button.getAttribute("aria-expanded") === "true";
-    setExpanded(!isExpanded);
-  });
+  button.hidden = true;
+  listWrap.hidden = false;
 }
 
 function setupLoveStoryToggle() {
@@ -6513,6 +6784,8 @@ function setupCopyButtons() {
 
   buttons.forEach((button) => {
     button.addEventListener("click", async () => {
+      const defaultLabel = button.dataset.copyDefaultLabel || button.textContent.trim();
+      const successLabel = button.dataset.copySuccessLabel || "¡Copiado! ✓";
       const key = button.getAttribute("data-copy-key");
       const value = key && Object.prototype.hasOwnProperty.call(weddingConfig, key)
         ? weddingConfig[key]
@@ -6530,20 +6803,71 @@ function setupCopyButtons() {
       }
 
       button.classList.add("is-copied");
+      button.textContent = successLabel;
       window.setTimeout(() => {
         button.classList.remove("is-copied");
+        button.textContent = defaultLabel;
       }, 900);
 
-      showToast("Copiado al portapapeles");
+      showToast(successLabel);
     });
   });
 }
 
 function setupForms() {
   const shouldEmbedForms = window.location.protocol !== "file:";
-  const rsvpUrls = resolveGoogleFormUrls(weddingConfig.rsvpEmbedUrl, weddingConfig.rsvpViewUrl);
+  const rsvpStatus = document.getElementById("rsvpStatus");
+  const rsvpUrls = resolveRsvpUrls(weddingConfig.rsvpEmbedUrl, weddingConfig.rsvpViewUrl);
+  const embedUrl = shouldEmbedForms ? rsvpUrls.embedUrl : "";
 
-  setEmbedAndLink("rsvpEmbed", shouldEmbedForms ? rsvpUrls.embedUrl : "", "rsvpViewLink", rsvpUrls.viewUrl);
+  setEmbedAndLink("rsvpEmbed", embedUrl, "rsvpViewLink", rsvpUrls.viewUrl);
+
+  if (rsvpStatus instanceof HTMLElement) {
+    rsvpStatus.textContent = shouldEmbedForms ? rsvpUrls.message : "Abre el formulario en una pestaña nueva para completarlo desde el archivo local.";
+    rsvpStatus.classList.toggle("is-link-only", rsvpUrls.mode === "link-only" || !shouldEmbedForms);
+    rsvpStatus.classList.toggle("is-warning", rsvpUrls.mode === "unavailable");
+  }
+}
+
+function resolveRsvpUrls(embedUrl, viewUrl) {
+  const resolvedGoogleForm = resolveGoogleFormUrls(embedUrl, viewUrl);
+  if (resolvedGoogleForm.embedUrl && resolvedGoogleForm.viewUrl && resolvedGoogleForm.isEmbeddable) {
+    return {
+      embedUrl: resolvedGoogleForm.embedUrl,
+      viewUrl: resolvedGoogleForm.viewUrl,
+      mode: "embed",
+      message: "Puedes confirmarlo aquí mismo o abrir el formulario en una pestaña nueva."
+    };
+  }
+
+  const rawEmbedUrl = typeof embedUrl === "string" ? embedUrl.trim() : "";
+  const rawViewUrl = typeof viewUrl === "string" ? viewUrl.trim() : "";
+  const fallbackUrl = rawViewUrl || rawEmbedUrl || "";
+
+  if (rawEmbedUrl && looksEmbeddableRsvpUrl(rawEmbedUrl)) {
+    return {
+      embedUrl: rawEmbedUrl,
+      viewUrl: fallbackUrl || rawEmbedUrl,
+      mode: "embed",
+      message: "Puedes confirmarlo aquí mismo o abrir el formulario en una pestaña nueva."
+    };
+  }
+
+  if (fallbackUrl) {
+    return {
+      embedUrl: "",
+      viewUrl: fallbackUrl,
+      mode: "link-only",
+      message: "Este formulario se abrirá en una pestaña nueva para asegurar una carga estable en móvil y escritorio."
+    };
+  }
+
+  return {
+    embedUrl: "",
+    viewUrl: "#rsvp",
+    mode: "unavailable",
+    message: "Añade una URL válida de RSVP en `script.js` para mostrar el formulario."
+  };
 }
 
 function setEmbedAndLink(embedId, embedUrl, linkId, linkUrl) {
@@ -6561,7 +6885,9 @@ function setEmbedAndLink(embedId, embedUrl, linkId, linkUrl) {
   }
 
   if (link instanceof HTMLAnchorElement) {
-    link.href = linkUrl;
+    const hasLinkUrl = typeof linkUrl === "string" && linkUrl.trim().length > 0 && linkUrl !== "#rsvp";
+    link.href = hasLinkUrl ? linkUrl : "#rsvp";
+    link.hidden = !hasLinkUrl;
   }
 }
 
@@ -6580,7 +6906,7 @@ function resolveGoogleFormUrls(embedUrl, viewUrl) {
   }
 
   const fallback = rawViewUrl || rawEmbedUrl || "";
-  return { embedUrl: fallback, viewUrl: fallback };
+  return { embedUrl: "", viewUrl: fallback, isEmbeddable: false };
 }
 
 function parseGoogleFormViewUrl(rawUrl) {
@@ -6605,10 +6931,33 @@ function parseGoogleFormViewUrl(rawUrl) {
 
     return {
       embedUrl: embedFormUrl,
-      viewUrl: viewFormUrl
+      viewUrl: viewFormUrl,
+      isEmbeddable: true
     };
   } catch {
     return null;
+  }
+}
+
+function looksEmbeddableRsvpUrl(rawUrl) {
+  if (!rawUrl) {
+    return false;
+  }
+
+  try {
+    const url = new URL(rawUrl);
+    if (url.hostname.includes("tally.so")) {
+      return true;
+    }
+
+    if (url.hostname.includes("typeform.com")) {
+      return true;
+    }
+
+    return url.hostname === "docs.google.com"
+      && url.pathname.includes("/forms/");
+  } catch {
+    return false;
   }
 }
 

@@ -4,7 +4,7 @@ const thanksConfig = {
   eventTitle: "Boda de Vic & Cris",
   eventDescription: "Ceremonia y celebración de boda de Vic & Cris.",
   eventStartISO: "2027-06-26T19:00:00+02:00",
-  eventEndISO: "2027-06-27T14:00:00+02:00",
+  eventEndISO: "2027-06-27T13:00:00+02:00",
   calendarTimezone: "Europe/Madrid",
   eventLocationName: "Hotel Palacete De La Ochava",
   eventAddress: "Calle Alcalá, 65, C. Miguel de Cervantes, 11, 28511 Valdilecha, Madrid"
