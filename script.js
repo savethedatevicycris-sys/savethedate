@@ -1360,7 +1360,7 @@ function initGateEffects() {
 
   const context = canvas.getContext("2d");
   const particlesEnabled = !reducedMotion && Boolean(context);
-  const parallaxEnabled = !reducedMotion && (!isMobile || effectConfig.mobileIdleParallax);
+  const parallaxEnabled = !reducedMotion && isMobile && effectConfig.mobileIdleParallax;
   const pointerDrivenParallax = parallaxEnabled && !isMobile;
   const idleParallax = parallaxEnabled && isMobile && effectConfig.mobileIdleParallax;
 
@@ -1790,7 +1790,6 @@ function setupBurgerMenu() {
     return;
   }
 
-  const desktopHoverQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
   const menuLinks = [...menuPanel.querySelectorAll('a[href^="#"]')].filter((link) => link instanceof HTMLAnchorElement);
   const linkEntries = menuLinks
     .map((link) => {
@@ -1800,10 +1799,7 @@ function setupBurgerMenu() {
     })
     .filter((entry) => entry !== null);
   let isOpen = false;
-  let closeTimerId = 0;
   let activeUpdateFrame = 0;
-
-  const isDesktopHoverMode = () => desktopHoverQuery.matches;
 
   const setActiveMenuLink = (activeId) => {
     linkEntries.forEach(({ link, target }) => {
@@ -1913,61 +1909,14 @@ function setupBurgerMenu() {
     toggleButton.setAttribute("aria-expanded", String(normalized));
   };
 
-  const openMenu = () => {
-    setMenuOpen(true);
-  };
-
   const closeMenu = () => {
     setMenuOpen(false);
   };
 
-  const clearCloseTimer = () => {
-    if (!closeTimerId) {
-      return;
-    }
-
-    window.clearTimeout(closeTimerId);
-    closeTimerId = 0;
-  };
-
-  const scheduleCloseForHover = () => {
-    clearCloseTimer();
-    closeTimerId = window.setTimeout(() => {
-      closeMenu();
-    }, 220);
-  };
-
   toggleButton.addEventListener("click", (event) => {
-    if (isDesktopHoverMode()) {
-      event.preventDefault();
-      openMenu();
-      return;
-    }
-
+    event.preventDefault();
     setMenuOpen(!isOpen);
   });
-
-  const onHoverEnter = () => {
-    if (!isDesktopHoverMode()) {
-      return;
-    }
-
-    clearCloseTimer();
-    openMenu();
-  };
-
-  const onHoverLeave = () => {
-    if (!isDesktopHoverMode()) {
-      return;
-    }
-
-    scheduleCloseForHover();
-  };
-
-  toggleButton.addEventListener("mouseenter", onHoverEnter);
-  menuPanel.addEventListener("mouseenter", onHoverEnter);
-  toggleButton.addEventListener("mouseleave", onHoverLeave);
-  menuPanel.addEventListener("mouseleave", onHoverLeave);
 
   menuPanel.addEventListener("click", (event) => {
     const target = event.target;
@@ -1979,9 +1928,7 @@ function setupBurgerMenu() {
       return;
     }
 
-    if (!isDesktopHoverMode()) {
-      closeMenu();
-    }
+    closeMenu();
   });
 
   menuLinks.forEach((link) => {
@@ -2002,25 +1949,14 @@ function setupBurgerMenu() {
   scheduleActiveMenuLinkUpdate();
 
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !isDesktopHoverMode()) {
+    if (event.key !== "Escape" || !isOpen) {
       return;
     }
 
     closeMenu();
   });
 
-  const onInputModeChange = () => {
-    closeMenu();
-  };
-
-  if (typeof desktopHoverQuery.addEventListener === "function") {
-    desktopHoverQuery.addEventListener("change", onInputModeChange);
-  } else if (typeof desktopHoverQuery.addListener === "function") {
-    desktopHoverQuery.addListener(onInputModeChange);
-  }
-
   window.addEventListener("pagehide", () => {
-    clearCloseTimer();
     closeMenu();
     if (activeUpdateFrame) {
       window.cancelAnimationFrame(activeUpdateFrame);
@@ -2028,12 +1964,6 @@ function setupBurgerMenu() {
     window.removeEventListener("scroll", scheduleActiveMenuLinkUpdate);
     window.removeEventListener("resize", scheduleActiveMenuLinkUpdate);
     window.removeEventListener("hashchange", scheduleActiveMenuLinkUpdate);
-
-    if (typeof desktopHoverQuery.removeEventListener === "function") {
-      desktopHoverQuery.removeEventListener("change", onInputModeChange);
-    } else if (typeof desktopHoverQuery.removeListener === "function") {
-      desktopHoverQuery.removeListener(onInputModeChange);
-    }
   }, { once: true });
 }
 
@@ -3218,8 +3148,8 @@ function setupIntroStatueVideoLoop() {
   }
 
   const vicStartSeconds = 3;
-  const vicTriggerSeconds = 6;
-  const crisPreviewSeconds = 2;
+  const vicTriggerSeconds = 10;
+  const crisPreviewSeconds = 0;
   const visibilityThreshold = 0.22;
   const visibilityRootMargin = "0px 0px -10% 0px";
   const prefersAggressiveCrisRestart = typeof window.matchMedia === "function"
