@@ -2,7 +2,7 @@
 
 // Cambia a false para desactivar rápidamente el overlay de pétalos.
 const ENABLE_PETALS = true;
-const PETAL_IMAGE_PATH = "assets/gallery/gold-petal.png";
+const PETAL_IMAGE_PATH = "assets/gallery/gold-petal.webp";
 
 /*
   Configuración principal del sitio.
@@ -59,17 +59,17 @@ const weddingConfig = {
     ],
     sunday: [
       {
-        time: "09:00",
+        time: "09:00h",
         title: "Desayuno buffet",
-        description: "Empieza el desayuno tipo buffet a las 9:00h hasta las 12:00h"
+        description: "Desayuno tipo buffet de 09:00h a 12:00h."
       },
       {
-        time: "10:00 a 12:30h",
+        time: "10:00h – 12:30h",
         title: "Piscina",
-        description: "Piscina de 10:00 a 12:30h."
+        description: "Piscina abierta de 10:00h a 12:30h. ¡No olvidéis el bañador!"
       },
       {
-        time: "13:00",
+        time: "13:00h",
         title: "Check-out",
         description: "Check-out y desalojo de habitaciones."
       }
@@ -85,12 +85,12 @@ const weddingConfig = {
       answer: "La entrada al palacete es a partir de las 15:00h del sábado 26 de junio de 2027. La salida es al día siguiente a las 13:00h del domingo 27 de junio de 2027."
     },
     {
-      question: "¿Como se cuál es la habitación que tendré asignada?",
-      answer: "Una vez sepamos quiénes venís confirmado, os asignaremos habitación y os haremos llegar la información a cada uno de vosotros. No obstante, al llegar al palacete os darán la llave de vuestra habitación, así que no os preocupéis por nada más que disfrutar. Si tenéis alguna petición especial para la habitación, podéis indicárnoslo en el el cuestionario de la invitación o hacernoslo llegar por WhatsApp"
+      question: "¿Cómo sé cuál es la habitación que tendré asignada?",
+      answer: "Una vez sepamos quiénes venís, os asignaremos habitación y os haremos llegar la información a cada uno de vosotros. No obstante, al llegar al palacete os darán la llave de vuestra habitación, así que no os preocupéis por nada más que disfrutar. Si tenéis alguna petición especial para la habitación, podéis indicárnoslo en el cuestionario de la invitación o hacérnoslo llegar por WhatsApp."
     },
     {
       question: "¿Hay dress code?",
-      answer: "Sí, elegante clásico. Recomendamos calzado cómodo para exteriores. Recordar que siempre tendréis disponible vuestra habitación."
+      answer: "Sí, elegante clásico. Recomendamos calzado cómodo para exteriores. Recordad que siempre tendréis disponible vuestra habitación."
     },
     {
       question: "¿Puedo ir con acompañante?",
@@ -105,16 +105,16 @@ const weddingConfig = {
       answer: "Sí, hay zona de aparcamiento reservada para invitados. Es parking vigilado 24h durante toda la estancia en el Palacete."
     },
     {
-      question: "¿Como funciona el servicio de peluquería y maquillaje?",
-      answer: "El servicio de peluquería y maquillaje está disponible en el palacete. Puedes reservar tu cita en el formulario RSVP. En el mismo palacete tienen peluquería y una vez sepamos quienes están interesados, os pondremos en contacto con ellos para coordinar horarios, servicios y precios."
+      question: "¿Cómo funciona el servicio de peluquería y maquillaje?",
+      answer: "El servicio de peluquería y maquillaje está disponible en el palacete. Puedes reservar tu cita en el formulario RSVP. En el mismo palacete tienen peluquería y una vez sepamos quiénes estáis interesados, os pondremos en contacto con ellos para coordinar horarios, servicios y precios."
     },
     {
       question: "¿Cómo funciona el servicio de guardería de niños?",
-      answer: "El servicio de guardería de niños está disponible en el palacete de forma gratuíta para vosotros. Puedes reservar tu cita en el formulario RSVP. En el mismo palacete tienen sala de juegos, colchonetas inchables y cine con la cuidadora profesional que hemos contratado para la ocasión. El servicio de guardería estará disponible durante la cena y durante la fiesta hasta las 4:00AM."
+      answer: "El servicio de guardería de niños está disponible en el palacete de forma gratuita para vosotros. Puedes reservar tu cita en el formulario RSVP. En el mismo palacete tienen sala de juegos, colchonetas hinchables y cine con la cuidadora profesional que hemos contratado para la ocasión. El servicio de guardería estará disponible durante la cena y durante la fiesta hasta las 04:00h."
     },
     {
       question: "¿Cómo funciona el servicio de cuidador de mascotas?",
-      answer: "El palacete ha puesto a nuestra disposición una persona que podrá cuidar durante nuestra estancia en el palacete de nuestras mascotas. Si estáis interesados, por favor, indicádnoslo en el formulario RSVP para que podamos coordinarlo con el palacete y con la persona encargada del cuidado de mascotas. El servicio de cuidador de mascotas estará disponible hasta que finalice la boda el domingo 27/06/2027."
+      answer: "El palacete ha puesto a nuestra disposición una persona que podrá cuidar de vuestras mascotas durante la estancia en el palacete. Si estáis interesados, por favor, indicádnoslo en el formulario RSVP para que podamos coordinarlo con el palacete y con la persona encargada del cuidado de mascotas. El servicio de cuidador de mascotas estará disponible hasta que finalice la boda el domingo 27/06/2027."
     }
   ],
   galleryImages: [
@@ -152,7 +152,7 @@ const weddingConfig = {
   services: [
     {
       id: "beauty",
-      image: "assets/gallery/peluqueria.png",
+      image: "assets/gallery/peluqueria.webp",
       title: "Peluquería y maquillaje",
       description: "Servicio previo a la ceremonia para invitadas e invitados.",
       price: "Desde 35 €",
@@ -170,7 +170,7 @@ const weddingConfig = {
         ],
         images: [
           {
-            src: "assets/gallery/peluqueria.png",
+            src: "assets/gallery/peluqueria.webp",
             alt: "Zona de peluquería y maquillaje",
             caption: "Peluquería y maquillaje"
           },
@@ -200,7 +200,7 @@ const weddingConfig = {
       id: "photos",
       image: "assets/gallery/cuidadora-ninos.png",
       title: "GUARDERÍA NIÑOS 0-12 AÑOS",
-      description: "Servicio gratuito de guardería de los niños durante la cena y durante la fiesta hasta las 4:00AM.",
+      description: "Servicio gratuito de guardería de los niños durante la cena y durante la fiesta hasta las 04:00h.",
       price: "Servicio gratuito",
       details: {
         kicker: "Cuidado infantil durante la boda",
@@ -241,7 +241,7 @@ const weddingConfig = {
     },
     {
       id: "brunch",
-      image: "assets/gallery/perros.png",
+      image: "assets/gallery/perros.webp",
       title: "CUIDADOR DE MASCOTAS",
       description: "Servicio de cuidador de mascotas durante el fin de semana.",
       price: "Consultar precio",
@@ -5479,7 +5479,7 @@ function getScheduleVisualMeta(item) {
 
   if (normalizedTitle === "check-in hotel") {
     return {
-      src: "assets/gallery/timbre-campanilla-antigua.png",
+      src: "assets/gallery/timbre-campanilla-antigua.webp",
       alt: "Campanilla antigua del hotel",
       programClass: "program-slide-image--bell",
       timelineClass: ""
@@ -5488,7 +5488,7 @@ function getScheduleVisualMeta(item) {
 
   if (normalizedTitle === "ceremonia") {
     return {
-      src: "assets/gallery/anillos-programa.png",
+      src: "assets/gallery/anillos-programa.webp",
       alt: "Anillos de boda",
       programClass: "program-slide-image--rings",
       timelineClass: ""
@@ -5506,7 +5506,7 @@ function getScheduleVisualMeta(item) {
 
   if (normalizedTitle === "cena") {
     return {
-      src: "assets/gallery/cena-programa.png",
+      src: "assets/gallery/cena-programa.webp",
       alt: "Cena del banquete",
       programClass: "program-slide-image--dinner",
       timelineClass: ""
@@ -5524,7 +5524,7 @@ function getScheduleVisualMeta(item) {
 
   if (normalizedTitle === "check-out" || normalizedTitle === "checkout" || normalizedTitle === "check out") {
     return {
-      src: "assets/gallery/maleta-programa.png",
+      src: "assets/gallery/maleta-programa.webp",
       alt: "Maleta de check-out",
       programClass: "program-slide-image--checkout",
       timelineClass: ""
@@ -5533,7 +5533,7 @@ function getScheduleVisualMeta(item) {
 
   if (normalizedTitle === "desayuno buffet" || normalizedTitle === "desayuno") {
     return {
-      src: "assets/gallery/desayuno-programa.png",
+      src: "assets/gallery/desayuno-programa.webp",
       alt: "Desayuno buffet",
       programClass: "program-slide-image--breakfast",
       timelineClass: "timeline-icon--breakfast"
@@ -5542,7 +5542,7 @@ function getScheduleVisualMeta(item) {
 
   if (normalizedTitle === "piscina") {
     return {
-      src: "assets/gallery/piscina-programa.png",
+      src: "assets/gallery/piscina-programa.webp",
       alt: "Piscina",
       programClass: "program-slide-image--pool",
       timelineClass: "timeline-icon--pool"

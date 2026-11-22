@@ -133,7 +133,7 @@ body.is-service-modal-open {
   width: 18px;
   height: 18px;
   pointer-events: none;
-  background-image: url("assets/gallery/gold-petal.png");
+  background-image: url("assets/gallery/gold-petal.webp");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -910,7 +910,7 @@ main [id] {
   --hero-bottom-frame-shift: -41.5%;
   --hero-bottom-frame-height: clamp(108px, 18vw, 148px);
   --hero-bottom-frame-padding-top: clamp(54px, 7vh, 74px);
-  --hero-video-poster: url("assets/gallery/hero-video-first-frame.jpg");
+  --hero-video-poster: url("assets/gallery/hero-video-first-frame.webp");
   position: relative;
   z-index: 4;
   min-height: clamp(380px, 55vh, 720px);
@@ -4874,7 +4874,7 @@ body.theme-light .gift-image-section {
   content: "";
   position: absolute;
   inset: 0;
-  background: url("assets/gallery/hero-video-first-frame.jpg") center / cover no-repeat;
+  background: url("assets/gallery/hero-video-first-frame.webp") center / cover no-repeat;
   opacity: 0;
 }
 

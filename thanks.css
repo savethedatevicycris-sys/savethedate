@@ -280,7 +280,7 @@ a:focus-visible {
   content: "";
   position: absolute;
   inset: 0;
-  background: url("assets/gallery/hero-video-first-frame.jpg") center / cover no-repeat;
+  background: url("assets/gallery/hero-video-first-frame.webp") center / cover no-repeat;
   opacity: 0;
 }
 
