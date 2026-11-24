@@ -1,0 +1,517 @@
+/*
+  Intro: apertura de sobre por capas
+  ----------------------------------
+  Todas las piezas se colocan en el sistema de coordenadas de las imágenes
+  (lienzo de 1536 x 1024). La unidad --u equivale a 1 px de ese lienzo, así que
+  el sobre se escala entero sin que las piezas se desalineen.
+
+  AJUSTES RÁPIDOS
+  - Tamaño del sobre: --sobre-ancho (en .intro-sobre).
+  - Tiempos: objeto INTRO_TIMING al principio de setupLetterGate() en script.js.
+  - Texto de la carta: index.html, bloque .sobre-carta-texto.
+*/
+
+.intro-sobre {
+  /* Ancho del sobre: cabe en pantalla junto al espacio reservado para la solapa abierta. */
+  --sobre-ancho: min(88vw, 560px, calc((100svh - 230px) / 1.08));
+  --marfil: #f6f1e8;
+  --tinta: #2a2218;
+  --oro: #8b7348;
+  --granate: #7a1f23;
+  overflow: hidden;
+  perspective: none;
+  transform-style: flat;
+  padding: 1rem;
+}
+
+/* styles.css fuerza fondo blanco en la intro; aquí la queremos marfil. */
+body.theme-light.is-locked #letterGate.intro-sobre {
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(255, 255, 255, 0.85), transparent 62%),
+    var(--marfil) !important;
+}
+
+.intro-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
+}
+
+.intro-overline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(0.68rem, 2.6vw, 0.82rem);
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--oro);
+}
+
+.intro-title {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 6.4vw, 2.6rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--tinta);
+}
+
+.intro-overline,
+.intro-title,
+.intro-actions {
+  transition: opacity 500ms ease;
+}
+
+/* ---------- Escenario: reserva el espacio de la solapa abierta y de la carta ---------- */
+.intro-stage {
+  position: relative;
+  width: var(--sobre-ancho);
+  padding-top: calc(var(--sobre-ancho) * 0.4);
+}
+
+.sobre {
+  --u: calc(100cqw / 1536);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1536 / 1024;
+  container-type: inline-size;
+}
+
+/* Sombra suave bajo el sobre (fija, para no repintar durante la animación). */
+.sobre::before {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 1%;
+  height: 12%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(70, 45, 15, 0.28), transparent 70%);
+  filter: blur(calc(var(--u) * 18));
+  transition: opacity 500ms ease;
+}
+
+.sobre.is-letter-free::before {
+  opacity: 0;
+}
+
+.sobre-capa,
+.sobre-solapa,
+.sobre-solapa-cara {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Orden de capas: fondo (1) · solapa abierta (2) · carta (3) · bolsillo (4) · solapa cerrada (5) · sello (6) */
+.sobre-fondo { z-index: 1; }
+.sobre-carta-recorte { z-index: 3; }
+.sobre-frontal { z-index: 4; }
+.sobre-solapa { z-index: 5; }
+.sobre-sello { z-index: 6; }
+
+/* ---------- Carta ----------
+   El recorte solo oculta lo que queda por debajo del bolsillo (y = 986);
+   por arriba es libre para que la carta pueda salir del sobre. */
+.sobre-carta-recorte {
+  position: absolute;
+  top: calc(var(--u) * -900);
+  bottom: calc(var(--u) * 38);
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sobre-carta {
+  position: absolute;
+  top: calc(var(--u) * 960);
+  left: calc(var(--u) * 193);
+  width: calc(var(--u) * 1150);
+  aspect-ratio: 1066 / 1372;
+  container-type: inline-size;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.sobre-carta-papel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 calc(var(--u) * 8) calc(var(--u) * 14) rgba(60, 35, 10, 0.22));
+}
+
+.sobre-carta-texto,
+.intro-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.sobre-carta-texto {
+  position: absolute;
+  inset: 12% 13%;
+}
+
+.sobre-carta-logo {
+  display: block;
+  width: 24cqw;
+  height: auto;
+  margin-bottom: 5cqw;
+  opacity: 0.6;
+  mix-blend-mode: multiply;
+}
+
+.sobre-carta-texto p,
+.intro-fallback p {
+  margin: 0;
+}
+
+.sobre-carta-linea {
+  font-family: var(--font-body-serif);
+  font-style: italic;
+  font-size: 6.4cqw;
+  line-height: 1.45;
+  color: #4a3720;
+}
+
+.sobre-carta-nombres {
+  margin-top: 0.55em !important;
+  font-family: var(--font-script);
+  font-size: 11.5cqw;
+  line-height: 1.15;
+  color: #6f4f22;
+}
+
+.sobre-carta-fecha {
+  margin-top: 0.7em !important;
+  font-family: var(--font-display);
+  font-size: 4.4cqw;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--oro);
+}
+
+/* ---------- Solapa con cara exterior e interior ---------- */
+.sobre-solapa {
+  transform-origin: 50% 3.125%; /* bisagra: borde superior del cuerpo (y = 32 de 1024) */
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.sobre-solapa-cara {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.sobre-solapa-exterior {
+  filter: drop-shadow(0 calc(var(--u) * 6) calc(var(--u) * 10) rgba(60, 35, 10, 0.28));
+}
+
+/* Cara interior: misma pieza vista por detrás, un poco más clara, como el interior del papel. */
+.sobre-solapa-interior {
+  transform: rotateY(180deg);
+  filter: brightness(1.08) saturate(0.86) drop-shadow(0 calc(var(--u) * -4) calc(var(--u) * 8) rgba(60, 35, 10, 0.18));
+}
+
+/* ---------- Sello de lacre partido en dos ----------
+   El lacre cubre la punta de la solapa y el bolsillo. Al abrir se rompe por el borde
+   de la solapa: la mitad de arriba se va con la solapa y la de abajo se queda en el sobre. */
+.sobre {
+  --sello-rotura-arriba: polygon(0% 0%, 100% 0%, 100% 25.6%, 94% 31.6%, 89% 34%, 83% 42%, 78% 43.5%, 72% 51.6%, 67% 53%, 61% 60.9%, 56% 62.6%, 50% 69%, 44% 62.6%, 39% 61%, 33% 52.8%, 28% 51.6%, 22% 43.6%, 17% 42%, 11% 33.9%, 6% 31.9%, 0% 25.6%);
+  --sello-rotura-abajo: polygon(0% 25.6%, 6% 31.9%, 11% 33.9%, 17% 42%, 22% 43.6%, 28% 51.6%, 33% 52.8%, 39% 61%, 44% 62.6%, 50% 69%, 56% 62.6%, 61% 60.9%, 67% 53%, 72% 51.6%, 78% 43.5%, 83% 42%, 89% 34%, 94% 31.6%, 100% 25.6%, 100% 100%, 0% 100%);
+}
+
+.sobre-sello {
+  position: absolute;
+  left: calc(var(--u) * 591);
+  top: calc(var(--u) * 426);
+  width: calc(var(--u) * 354);
+  aspect-ratio: 520 / 511;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  transform-origin: 50% 80%;
+  filter: drop-shadow(0 calc(var(--u) * 10) calc(var(--u) * 14) rgba(70, 10, 10, 0.35));
+  transition: opacity 500ms ease;
+}
+
+.sobre-sello-mitad {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.sobre-sello-abajo {
+  clip-path: var(--sello-rotura-abajo);
+}
+
+/* Mitad superior, dentro de la solapa: misma posición, ligeramente por delante del papel. */
+.sobre-sello-arriba {
+  position: absolute;
+  left: 38.477%;   /* 591 / 1536 */
+  top: 41.602%;    /* 426 / 1024 */
+  width: 23.047%;  /* 354 / 1536 */
+  aspect-ratio: 520 / 511;
+  transform: translateZ(calc(var(--u) * 2));
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  filter: drop-shadow(0 calc(var(--u) * 10) calc(var(--u) * 14) rgba(70, 10, 10, 0.35));
+  pointer-events: none;
+}
+
+.sobre-sello-arriba .sobre-sello-mitad {
+  clip-path: var(--sello-rotura-arriba);
+}
+
+.sobre-sello:disabled {
+  cursor: default;
+}
+
+.sobre-sello:focus-visible,
+.intro-open:focus-visible,
+.intro-skip:focus-visible {
+  outline: 3px solid var(--granate);
+  outline-offset: 4px;
+}
+
+/* ---------- Botones ---------- */
+.intro-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: clamp(1rem, 3.2svh, 1.8rem);
+}
+
+.intro-open {
+  min-height: 50px;
+  padding: 0 1.9rem;
+  border: 1px solid #a8763f;
+  border-radius: 999px;
+  background: var(--granate);
+  box-shadow: 0 10px 22px rgba(122, 31, 35, 0.24), inset 0 0 0 3px rgba(217, 194, 154, 0.2);
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff7ec;
+  cursor: pointer;
+  transition: background-color 200ms ease, transform 200ms ease, opacity 200ms ease;
+}
+
+.intro-open:not(:disabled):hover {
+  background: #5f171b;
+  transform: translateY(-1px);
+}
+
+.intro-open:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.intro-sound-note {
+  margin: 0;
+  font-family: var(--font-body-serif);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: #6b5a44;
+}
+
+.intro-skip {
+  position: absolute;
+  top: max(0.8rem, env(safe-area-inset-top));
+  right: max(0.8rem, env(safe-area-inset-right));
+  z-index: 10;
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 1px solid rgba(139, 115, 72, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 252, 246, 0.85);
+  font-family: var(--font-body-serif);
+  font-size: 0.95rem;
+  color: #5a4322;
+  cursor: pointer;
+}
+
+.intro-skip:hover {
+  background: #fff;
+}
+
+/* ---------- Secuencia de apertura ---------- */
+/* 1. Sello: se presiona un instante y se parte. La mitad de abajo cede un poco
+   y se queda pegada al sobre; la de arriba se va con la solapa. */
+.sobre.is-opening .sobre-sello {
+  animation: introSelloRomper var(--t-sello, 400ms) cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+}
+
+@keyframes introSelloRomper {
+  0% { transform: translateY(0) rotate(0deg) scale(1); }
+  30% { transform: translateY(0.6%) rotate(0deg) scale(0.985); }
+  55% { transform: translateY(2.4%) rotate(-3deg) scale(1); }
+  100% { transform: translateY(3%) rotate(-3.6deg) scale(1); }
+}
+
+.sobre.is-opening .sobre-sello-arriba {
+  animation: introSelloArriba var(--t-sello, 400ms) ease-out forwards;
+}
+
+@keyframes introSelloArriba {
+  0% { transform: translateZ(calc(var(--u) * 2)) scale(1); }
+  30% { transform: translateZ(calc(var(--u) * 2)) translateY(0.6%) scale(0.985); }
+  100% { transform: translateZ(calc(var(--u) * 2)) translateY(-0.8%) rotate(1.2deg); }
+}
+
+.sobre.is-letter-free .sobre-sello {
+  opacity: 0;
+}
+
+/* 2. Solapa: gira desde la bisagra. A 90° (de canto) pasa detrás de la carta. */
+.sobre.is-opening .sobre-solapa {
+  animation: introSolapaAbrir var(--t-solapa, 850ms) linear var(--d-solapa, 250ms) forwards;
+}
+
+@keyframes introSolapaAbrir {
+  0% {
+    transform: perspective(240cqw) rotateX(0deg);
+    z-index: 5;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+  }
+  50% {
+    transform: perspective(240cqw) rotateX(90deg);
+    z-index: 5;
+    animation-timing-function: cubic-bezier(0.1, 0.45, 0.4, 1);
+  }
+  50.01% { z-index: 2; }
+  100% {
+    transform: perspective(240cqw) rotateX(180deg);
+    z-index: 2;
+  }
+}
+
+/* 3. Carta: sale hacia arriba por detrás del bolsillo. */
+.sobre-carta {
+  transition: transform var(--t-carta, 900ms) cubic-bezier(0.25, 0.8, 0.3, 1);
+}
+
+.sobre.is-letter-rising .sobre-carta {
+  transform: translateY(calc(var(--u) * -590));
+}
+
+/* 4. La carta se adelanta y se centra para leerla; el sobre se retira. */
+.sobre.is-letter-free .sobre-carta-recorte {
+  overflow: visible;
+}
+
+.sobre.is-letter-free .sobre-carta {
+  transition: transform var(--t-lectura, 750ms) cubic-bezier(0.22, 1, 0.36, 1);
+  transform:
+    translate(var(--lift-x, 0px), calc(var(--u) * -590 + var(--lift-y, 0px)))
+    scale(var(--lift-s, 1));
+}
+
+.sobre-fondo,
+.sobre-frontal {
+  transition: opacity 600ms ease, transform 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sobre-solapa {
+  transition: opacity 500ms ease;
+}
+
+.sobre.is-letter-free .sobre-fondo,
+.sobre.is-letter-free .sobre-frontal {
+  opacity: 0;
+  transform: translateY(8%);
+}
+
+.sobre.is-letter-free .sobre-solapa {
+  opacity: 0;
+}
+
+.intro-sobre.is-letter-free .intro-overline,
+.intro-sobre.is-letter-free .intro-title,
+.intro-sobre.is-letter-free .intro-actions {
+  opacity: 0;
+}
+
+.intro-sobre.is-opening .intro-open,
+.intro-sobre.is-opening .intro-sound-note {
+  opacity: 0.4;
+}
+
+/* ---------- Movimiento reducido: solo fundidos, sin giros ni desplazamientos ---------- */
+.intro-sobre.is-reduced .sobre-sello,
+.intro-sobre.is-reduced .sobre-sello-arriba,
+.intro-sobre.is-reduced .sobre-solapa {
+  animation: none !important;
+}
+
+.intro-sobre.is-reduced .sobre-carta {
+  transition: opacity 400ms ease !important;
+}
+
+.intro-sobre.is-reduced .sobre-fondo,
+.intro-sobre.is-reduced .sobre-frontal,
+.intro-sobre.is-reduced .sobre-solapa,
+.intro-sobre.is-reduced .sobre-sello {
+  transition: opacity 400ms ease !important;
+  opacity: 0;
+  transform: none !important;
+}
+
+.intro-sobre.is-reduced .sobre-carta-recorte {
+  overflow: visible;
+}
+
+/* ---------- Alternativa si alguna imagen no carga ---------- */
+.intro-fallback {
+  display: none;
+}
+
+.intro-sobre[data-intro-state="fallback"] .sobre {
+  display: none;
+}
+
+.intro-sobre[data-intro-state="fallback"] .intro-stage {
+  padding-top: 0;
+}
+
+.intro-sobre[data-intro-state="fallback"] .intro-fallback {
+  display: flex;
+  container-type: inline-size;
+  margin: 1.4rem auto 0;
+  padding: 2.2rem 1.4rem;
+  border: 1px solid rgba(139, 115, 72, 0.35);
+  border-radius: 6px;
+  background: #f4e6cc;
+  box-shadow: 0 14px 30px rgba(70, 45, 15, 0.12);
+}
+
+.intro-sobre[data-intro-state="fallback"] .sobre-carta-linea { font-size: 1.15rem; }
+.intro-sobre[data-intro-state="fallback"] .sobre-carta-nombres { font-size: 2.2rem; }
+.intro-sobre[data-intro-state="fallback"] .sobre-carta-fecha { font-size: 0.8rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sobre-sello,
+  .intro-open {
+    transition: none;
+  }
+}

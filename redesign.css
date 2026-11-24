@@ -1,0 +1,1820 @@
+/*
+  Rediseño (rama rediseno-maqueta)
+  Capas nuevas sobre el diseño original: ficha de datos clave, historia con
+  polaroids, programa por días, confirmación en sección oscura y pie con firma.
+  No modifica la apertura del sobre, la portada, los vídeos ni el regalo/llave.
+*/
+
+:root {
+  --wine: #7a1f23;
+  --wine-strong: #5f171b;
+  --gold-soft: #d9c29a;
+  --night: #231d1a;
+}
+
+/* ---------- Botones nuevos ---------- */
+.btn-wine,
+.btn-gold-outline {
+  min-height: 52px;
+  padding: 0 1.8rem;
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.btn-wine {
+  color: #fff7ec;
+  background: var(--wine);
+  border: 1px solid #a8763f;
+  box-shadow: 0 10px 24px rgba(122, 31, 35, 0.28), inset 0 0 0 3px rgba(217, 194, 154, 0.22);
+}
+
+.btn-wine:hover {
+  color: #fff7ec;
+  background: var(--wine-strong);
+  border-color: #c39a62;
+}
+
+.btn-gold-outline {
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--gold-strong);
+  box-shadow: none;
+}
+
+.btn-gold-outline:hover {
+  color: var(--ink);
+}
+
+/* ---------- Títulos con palabra caligráfica ---------- */
+.story-heading {
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.story-heading-script {
+  display: block;
+  margin-top: -0.1em;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: 1.35em;
+  letter-spacing: 0;
+  color: var(--gold-strong);
+  text-shadow: none;
+}
+
+#programa > .section-kicker,
+.story-kicker {
+  text-align: center;
+}
+
+/* ---------- Ficha de datos clave ---------- */
+.key-facts.section {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-top: 0;
+}
+
+.key-facts-card {
+  position: relative;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: clamp(1.8rem, 4vw, 2.6rem) clamp(1.2rem, 4vw, 2.4rem);
+  background: #fffdf8;
+  border: 1px solid var(--gold-soft);
+  border-radius: 6px;
+  box-shadow: 0 18px 40px rgba(60, 40, 20, 0.08);
+  text-align: center;
+}
+
+.key-facts-card::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(167, 139, 90, 0.35);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.key-facts-grid {
+  display: grid;
+  gap: 1.4rem;
+}
+
+.key-fact-icon {
+  display: block;
+  width: 30px;
+  height: 30px;
+  margin: 0 auto 0.5rem;
+  color: var(--gold-strong);
+}
+
+.key-fact p {
+  margin: 0;
+}
+
+.key-fact-label {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.key-fact-value {
+  font-family: var(--font-body-serif);
+  font-size: 1.3rem;
+  color: var(--ink);
+}
+
+.key-fact-sub {
+  font-family: var(--font-body-serif);
+  font-size: 1rem;
+}
+
+.key-fact-sub a {
+  color: var(--wine);
+}
+
+.key-facts-actions {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 420px;
+  margin: 1.8rem auto 0;
+}
+
+.key-facts-deadline {
+  margin: 0.9rem 0 0;
+  font-family: var(--font-body-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+}
+
+.key-facts-deadline strong {
+  font-style: normal;
+  color: var(--wine);
+}
+
+/* ---------- Nuestra historia: línea del tiempo ---------- */
+.story-timeline-section {
+  text-align: center;
+}
+
+.story-intro {
+  max-width: 560px;
+  margin: 0 auto;
+  font-family: var(--font-body-serif);
+  font-size: clamp(1.15rem, 2vw, 1.35rem);
+  color: var(--ink-muted);
+}
+
+.story-hint,
+.program-days-hint {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-body-serif);
+  font-style: italic;
+  font-size: 0.98rem;
+  color: var(--gold);
+  text-align: center;
+}
+
+.story-hint::before,
+.program-days-hint::before {
+  content: "✦ ";
+}
+
+.story-timeline {
+  position: relative;
+  list-style: none;
+  max-width: 880px;
+  margin: 2.2rem auto 0;
+  padding: 0;
+}
+
+.story-timeline::before {
+  display: none;
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 2rem;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(var(--gold-soft), var(--gold-strong), var(--gold-soft));
+  transform: translateX(-50%);
+}
+
+.story-moment {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  padding-bottom: 3rem;
+}
+
+.story-moment::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  background: #fbf5ea;
+  border: 2px solid var(--gold-strong);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.story-moment:last-child {
+  padding-bottom: 1rem;
+}
+
+/* Polaroid que se gira */
+.story-polaroid {
+  position: relative;
+  z-index: 1;
+  width: 230px;
+  height: 278px;
+  margin-top: 1.2rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  perspective: 900px;
+  transform: rotate(var(--tilt, -2deg));
+  transition: transform 260ms ease;
+}
+
+.story-polaroid:hover {
+  transform: rotate(0deg) scale(1.02);
+}
+
+.story-polaroid-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.story-polaroid.is-flipped .story-polaroid-inner {
+  transform: rotateY(180deg);
+}
+
+.story-polaroid-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 12px 0;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(50, 35, 20, 0.18);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.story-polaroid-back {
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 1.4rem;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.8), transparent 70%),
+    #f4ead8;
+  transform: rotateY(180deg);
+}
+
+.story-photo {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #ece3d3;
+}
+
+.story-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+  filter: sepia(0.18);
+}
+
+.story-placeholder {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.8rem;
+  background: repeating-linear-gradient(45deg, #efe6d6, #efe6d6 10px, #f5eee2 10px, #f5eee2 20px);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: #9b8a72;
+}
+
+.story-placeholder svg {
+  width: 32px;
+  height: 32px;
+  color: var(--gold-strong);
+}
+
+.story-caption {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-script);
+  font-size: 1.55rem;
+  color: var(--ink-muted);
+}
+
+.story-back-text {
+  font-family: var(--font-script);
+  font-size: 1.75rem;
+  line-height: 1.2;
+  color: #5a4322;
+}
+
+.story-back-sign {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+}
+
+.story-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 340px;
+  padding: 0.3rem 0.7rem;
+}
+
+.story-copy p {
+  margin: 0;
+}
+
+.story-date {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  color: var(--gold);
+}
+
+.story-title {
+  margin: 0.25rem 0 0.35rem;
+  font-weight: 500;
+  font-size: 1.4rem;
+}
+
+.story-moment:last-child .story-title {
+  color: var(--wine);
+}
+
+.story-text {
+  font-family: var(--font-body-serif);
+  font-size: 1.08rem;
+  line-height: 1.5;
+}
+
+.story-full {
+  max-width: 720px;
+  text-align: left;
+}
+
+.story-full .love-story-toggle {
+  display: block;
+  margin: 0.5rem auto 0;
+}
+
+/* ---------- Programa por días ---------- */
+.program-days {
+  display: grid;
+  gap: 1.4rem;
+  margin-top: 1.6rem;
+}
+
+.program-day {
+  padding: 1.5rem 1.2rem 0.6rem;
+  background: #fffdf8;
+  border: 1px solid var(--gold-soft);
+  border-radius: 6px;
+}
+
+.program-day-head {
+  margin-bottom: 0.8rem;
+  text-align: center;
+}
+
+.program-day-head p {
+  margin: 0;
+}
+
+.program-day-name {
+  font-family: var(--font-script);
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--gold-strong);
+}
+
+.program-day-date {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.program-day-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.program-moment {
+  border-top: 1px solid rgba(167, 139, 90, 0.25);
+}
+
+.program-moment-toggle {
+  display: grid;
+  grid-template-columns: 60px 1fr 24px;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.8rem 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.program-moment-icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border: 1px solid var(--gold-soft);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #fff, #f3e9d6);
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+
+.program-moment-icon img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+}
+
+.program-moment-toggle:hover .program-moment-icon {
+  transform: scale(1.06) rotate(-4deg);
+}
+
+.program-moment-head {
+  display: grid;
+}
+
+.program-moment-time {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+}
+
+.program-moment-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.program-moment.is-star .program-moment-title {
+  color: var(--wine);
+}
+
+.program-moment.is-star .program-moment-icon {
+  border-color: var(--gold-strong);
+  box-shadow: 0 0 0 4px rgba(167, 139, 90, 0.16);
+}
+
+.program-moment-plus {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--gold-soft);
+  border-radius: 50%;
+}
+
+.program-moment-plus::before,
+.program-moment-plus::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 1.5px;
+  background: var(--gold);
+  transform: translate(-50%, -50%);
+  transition: transform 260ms ease;
+}
+
+.program-moment-plus::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.program-moment.is-open .program-moment-plus::after {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.program-moment-panel {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0 1.2rem;
+  text-align: center;
+  animation: programPanelIn 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.program-moment-panel[hidden] {
+  display: none;
+}
+
+.program-moment-illustration {
+  width: min(200px, 60%);
+  max-height: 180px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(60, 40, 20, 0.18));
+}
+
+.program-moment-panel p {
+  max-width: 34ch;
+  margin: 0;
+  font-family: var(--font-body-serif);
+  font-size: 1.05rem;
+}
+
+@keyframes programPanelIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Confirmación de asistencia ---------- */
+.rsvp-dark.section {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2.6rem, 6vw, 4rem) clamp(1.2rem, 4vw, 2.4rem);
+  text-align: center;
+  border-color: rgba(217, 194, 154, 0.35);
+}
+
+/* styles.css fuerza el fondo claro en todas las secciones con !important */
+body.theme-light .rsvp-dark.section {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(176, 141, 87, 0.22), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(122, 31, 35, 0.35), transparent 60%),
+    var(--night) !important;
+}
+
+.rsvp-dark::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(217, 194, 154, 0.32);
+  border-radius: calc(var(--radius-lg) - 8px);
+  pointer-events: none;
+}
+
+.rsvp-dark .section-kicker {
+  color: var(--gold-soft);
+}
+
+.rsvp-dark .story-heading {
+  color: #fbf3e6;
+}
+
+.rsvp-dark .story-heading-script {
+  color: var(--gold-soft);
+}
+
+.rsvp-dark-seal {
+  display: block;
+  width: 92px;
+  margin: 0 auto 1rem;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+}
+
+.rsvp-dark-lead {
+  max-width: 520px;
+  margin: 1rem auto 0;
+  font-family: var(--font-body-serif);
+  font-size: 1.15rem;
+  color: #d8cbb8;
+}
+
+.rsvp-dark-lead strong {
+  color: #fff;
+}
+
+.rsvp-dark-actions {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.8rem;
+}
+
+.btn-wine-lg {
+  min-width: min(100%, 340px);
+  min-height: 58px;
+  font-size: 0.92rem;
+}
+
+.rsvp-dark-sent {
+  font-family: var(--font-body-serif);
+  font-size: 1rem;
+  color: #bfae95;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(191, 174, 149, 0.4);
+}
+
+.rsvp-dark-sent:hover {
+  color: #fff;
+}
+
+.rsvp-dark .embed-wrap[hidden] {
+  display: none;
+}
+
+/* ---------- Pie con firma ---------- */
+.signature-meta {
+  margin: 0.8rem 0 0;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.signature-tag {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-body-serif);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--wine);
+}
+
+/* ---------- Escritorio ---------- */
+@media (min-width: 760px) {
+  .key-facts-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+  }
+
+  .key-fact + .key-fact {
+    border-left: 1px solid rgba(167, 139, 90, 0.3);
+  }
+
+  .key-facts-actions {
+    flex-direction: row;
+    justify-content: center;
+    max-width: none;
+  }
+
+  .story-timeline::before {
+    display: block;
+  }
+
+  .story-moment {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 3.5rem;
+    padding-bottom: 2.4rem;
+  }
+
+  .story-moment::before {
+    top: 50%;
+  }
+
+  .story-moment .story-polaroid {
+    justify-self: end;
+    margin-top: 0;
+  }
+
+  .story-moment .story-copy {
+    justify-self: start;
+    text-align: left;
+    background: none;
+  }
+
+  .story-moment:nth-child(even) .story-polaroid {
+    order: 2;
+    justify-self: start;
+  }
+
+  .story-moment:nth-child(even) .story-copy {
+    order: 1;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .program-days {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-polaroid-inner,
+  .program-moment-panel {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* ---------- Títulos de sección unificados ---------- */
+#countdownSection .section-kicker,
+#countdownSection h2,
+#ubicacion .section-kicker,
+#ubicacion h2,
+#ubicacion .address,
+#lugar > .section-kicker,
+#lugar > h2,
+#lugar > .muted,
+#servicios > .section-kicker,
+#servicios > h2,
+#servicios > .muted,
+#faq > .section-kicker,
+#faq > h2,
+.palace-discovery-body > .section-kicker,
+.palace-discovery-body > h2 {
+  text-align: center;
+}
+
+#countdownSection h2,
+#ubicacion h2,
+#lugar > h2,
+#servicios > h2,
+#faq > h2,
+.palace-discovery-body > h2 {
+  font-weight: 500;
+  font-size: clamp(1.8rem, 4.2vw, 2.7rem);
+  letter-spacing: 0.04em;
+}
+
+/* Separador dorado bajo cada título */
+#countdownSection h2::after,
+#ubicacion h2::after,
+#lugar > h2::after,
+#servicios > h2::after,
+#faq > h2::after,
+.palace-discovery-body > h2::after,
+.story-heading::after {
+  content: "";
+  display: block;
+  width: 180px;
+  height: 12px;
+  margin: 0.8rem auto 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 12'%3E%3Cdefs%3E%3ClinearGradient id='l' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23a78b5a' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23a78b5a'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='1' x2='0'%3E%3Cstop offset='0' stop-color='%23a78b5a' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23a78b5a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='0' y='5.5' width='76' height='1' fill='url(%23l)'/%3E%3Crect x='104' y='5.5' width='76' height='1' fill='url(%23r)'/%3E%3Cpath d='M90 0l6 6-6 6-6-6z' fill='%23a78b5a'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+#ubicacion .actions-row {
+  justify-content: center;
+}
+
+/* ---------- Ordenador: carta más contenida ---------- */
+@media (min-width: 900px) {
+  .intro-section {
+    width: min(720px, calc(100vw - 1.2rem));
+  }
+}
+
+/* ---------- Tarjeta de título: nombres en oro barroco ---------- */
+.title-card-kicker,
+.title-card-date {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--gold-strong);
+}
+
+.title-card-kicker {
+  font-size: clamp(0.68rem, 2.2vw, 0.95rem);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  margin-bottom: clamp(1rem, 3vw, 1.6rem);
+}
+
+.title-card-img.title-card-img--oro {
+  width: min(640px, 92%);
+  margin: 0 auto;
+  filter: drop-shadow(0 10px 18px rgba(90, 60, 10, 0.22));
+}
+
+.title-card-date {
+  margin-top: clamp(1rem, 3vw, 1.6rem);
+  font-family: var(--font-body-serif);
+  font-size: clamp(1.15rem, 3.6vw, 1.7rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Velas (carta, faroles y centro de mesa): llamas realistas ancladas a la mecha ----------
+   La posición (--x, --y = base sobre la mecha) y el alto (--h) los calcula
+   setupInviteFlameAlignment() a partir de las medidas de la imagen. */
+.welcome-letter .invite-candle-flames,
+.invite-candle-flames.invite-candle-flames--carriages,
+.invite-candle-flames.invite-candle-flames--program {
+  mix-blend-mode: screen; /* la llama se suma a la luz pintada, sin bordes */
+  /* La capa ocupa exactamente la imagen por CSS (sin depender de medidas en JS). */
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+.welcome-letter .invite-candle-flames .invite-flame,
+.invite-candle-flames.invite-candle-flames--carriages .invite-flame,
+.invite-candle-flames.invite-candle-flames--program .invite-flame {
+  --h: 3.7%;
+  --dur: 2.6s;
+  left: var(--x);
+  top: var(--y);
+  width: auto;
+  height: var(--h);
+  aspect-ratio: 0.36;
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
+  border-radius: 0;
+  background: none;
+  filter: none;
+  opacity: 1;
+  mix-blend-mode: normal;
+  animation: none;
+}
+
+/* Cuerpo de la llama: lágrima con núcleo blanco, cuerpo ámbar y base azulada. */
+.welcome-letter .invite-candle-flames .invite-flame::before,
+.invite-candle-flames.invite-candle-flames--carriages .invite-flame::before,
+.invite-candle-flames.invite-candle-flames--program .invite-flame::before {
+  inset: 0;
+  border-radius: 50% 50% 46% 46% / 64% 64% 36% 36%;
+  background:
+    radial-gradient(ellipse 34% 26% at 50% 80%, rgba(255, 255, 252, 0.95), rgba(255, 250, 228, 0.6) 60%, rgba(255, 245, 210, 0) 100%),
+    radial-gradient(ellipse 62% 78% at 50% 64%, rgba(255, 232, 150, 0.9), rgba(255, 186, 70, 0.55) 55%, rgba(255, 140, 30, 0) 100%),
+    radial-gradient(ellipse 28% 12% at 50% 97%, rgba(120, 150, 255, 0.5), rgba(120, 150, 255, 0) 100%);
+  filter: blur(0.35px);
+  opacity: 1;
+  transform-origin: 50% 100%;
+  animation: vela-llama var(--dur) ease-in-out infinite var(--phase, 0s);
+}
+
+/* Halo cálido sobre el papel. */
+.welcome-letter .invite-candle-flames .invite-flame::after,
+.invite-candle-flames.invite-candle-flames--carriages .invite-flame::after,
+.invite-candle-flames.invite-candle-flames--program .invite-flame::after {
+  inset: auto;
+  left: 50%;
+  bottom: 18%;
+  width: 560%;
+  aspect-ratio: 1;
+  transform: translate(-50%, 50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 196, 105, 0.34) 0%, rgba(255, 170, 70, 0.14) 38%, rgba(255, 150, 50, 0) 70%);
+  filter: none;
+  opacity: 0.8;
+  animation: vela-halo calc(var(--dur) * 1.3) ease-in-out infinite var(--phase, 0s);
+}
+
+.welcome-letter .invite-candle-flames .invite-flame.invite-flame--one { --dur: 2.6s; --phase: -0.4s; }
+.welcome-letter .invite-candle-flames .invite-flame.invite-flame--two { --dur: 2.2s; --phase: -1.1s; }
+.welcome-letter .invite-candle-flames .invite-flame.invite-flame--three { --dur: 2.9s; --phase: -1.7s; }
+.welcome-letter .invite-candle-flames .invite-flame.invite-flame--four { --dur: 2.4s; --phase: -0.8s; }
+
+/* Parpadeo irregular: se estira, se encoge y se inclina desde la mecha. */
+@keyframes vela-llama {
+  0% { transform: scale(1, 1) skewX(0deg); opacity: 0.92; }
+  12% { transform: scale(0.97, 1.05) skewX(1.6deg); opacity: 1; }
+  24% { transform: scale(1.02, 0.96) skewX(-1deg); opacity: 0.88; }
+  37% { transform: scale(0.98, 1.07) skewX(2.2deg); opacity: 0.97; }
+  49% { transform: scale(1.01, 0.98) skewX(-1.8deg); opacity: 0.9; }
+  63% { transform: scale(0.96, 1.04) skewX(0.8deg); opacity: 1; }
+  78% { transform: scale(1.03, 0.95) skewX(-2.4deg); opacity: 0.86; }
+  90% { transform: scale(0.99, 1.03) skewX(1.2deg); opacity: 0.95; }
+  100% { transform: scale(1, 1) skewX(0deg); opacity: 0.92; }
+}
+
+@keyframes vela-halo {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, 50%) scale(0.96); }
+  30% { opacity: 0.95; transform: translate(-50%, 50%) scale(1.04); }
+  55% { opacity: 0.75; transform: translate(-50%, 50%) scale(0.99); }
+  80% { opacity: 0.9; transform: translate(-50%, 50%) scale(1.02); }
+}
+
+/* Mantiene la pausa cuando la carta no está en pantalla. */
+.invite.is-paused.welcome-letter .invite-flame::before,
+.invite.is-paused.welcome-letter .invite-flame::after {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-letter .invite-candle-flames .invite-flame::before,
+  .invite-candle-flames.invite-candle-flames--carriages .invite-flame::before,
+  .invite-candle-flames.invite-candle-flames--program .invite-flame::before,
+  .welcome-letter .invite-candle-flames .invite-flame::after,
+  .invite-candle-flames.invite-candle-flames--carriages .invite-flame::after,
+  .invite-candle-flames.invite-candle-flames--program .invite-flame::after {
+    animation: none;
+  }
+}
+
+/* Posición de cada llama sobre su imagen: --x centro, --y base (mecha), --h alto.
+   Medidas sobre carriages-row-tight.webp (1524x503) y centro-mesa-programa.png (1498x533). */
+.invite-candle-flames.invite-candle-flames--carriages .invite-flame.invite-flame--carriage-one { --x: 20.932%; --y: 40.557%; --h: 2.19%; --dur: 2.3s; --phase: -0.3s; }
+.invite-candle-flames.invite-candle-flames--carriages .invite-flame.invite-flame--carriage-two { --x: 32.612%; --y: 37.376%; --h: 2.19%; --dur: 2.7s; --phase: -1.2s; }
+.invite-candle-flames.invite-candle-flames--carriages .invite-flame.invite-flame--carriage-three { --x: 62.664%; --y: 33.201%; --h: 2.19%; --dur: 2.5s; --phase: -0.7s; }
+.invite-candle-flames.invite-candle-flames--carriages .invite-flame.invite-flame--carriage-four { --x: 71.063%; --y: 33.002%; --h: 2.19%; --dur: 2.2s; --phase: -1.6s; }
+
+.invite-candle-flames.invite-candle-flames--program .invite-flame.invite-flame--program-one { --x: 43.591%; --y: 11.632%; --h: 8.443%; --dur: 2.6s; --phase: -0.2s; }
+.invite-candle-flames.invite-candle-flames--program .invite-flame.invite-flame--program-two { --x: 56.208%; --y: 11.632%; --h: 7.505%; --dur: 2.3s; --phase: -1s; }
+.invite-candle-flames.invite-candle-flames--program .invite-flame.invite-flame--program-three { --x: 24.566%; --y: 45.779%; --h: 4.878%; --dur: 2.8s; --phase: -1.5s; }
+.invite-candle-flames.invite-candle-flames--program .invite-flame.invite-flame--program-four { --x: 31.242%; --y: 55.722%; --h: 3.565%; --dur: 2.1s; --phase: -0.6s; }
+.invite-candle-flames.invite-candle-flames--program .invite-flame.invite-flame--program-five { --x: 70.761%; --y: 36.773%; --h: 4.503%; --dur: 2.5s; --phase: -1.9s; }
+.invite-candle-flames.invite-candle-flames--program .invite-flame.invite-flame--program-six { --x: 78.638%; --y: 48.593%; --h: 5.066%; --dur: 2.4s; --phase: -0.9s; }
+
+/* Faroles de los carruajes: halo algo más amplio, como luz tras el cristal. */
+.invite-candle-flames.invite-candle-flames--carriages .invite-flame::after {
+  width: 720%;
+}
+
+/* La capa de los faroles acompaña a la imagen mientras aparece (antes se quedaba quieta). */
+.invite-candle-flames.invite-candle-flames--carriages {
+  transform: translateY(14px) translateX(12px) scale(0.92) rotate(-1.1deg);
+  transform-origin: center;
+  transition:
+    opacity 1050ms cubic-bezier(0.16, 1, 0.3, 1) 150ms,
+    transform 1050ms cubic-bezier(0.16, 1, 0.3, 1) 150ms;
+}
+
+.decor-media-image--carriages.is-visible + .invite-candle-flames.invite-candle-flames--carriages {
+  transform: none;
+}
+
+/* =====================================================================
+   REGALO PARA LOS INVITADOS: la llave sale de la caja
+   Coordenadas sobre la imagen de la caja abierta (1536x1024).
+   ===================================================================== */
+.guest-gift-loop-float {
+  position: relative;
+}
+
+/* La caja "respira" y de vez en cuando tiembla, como si dentro hubiera algo. */
+.gift-image-section--guest-stay[data-guest-gift-state="idle"] .guest-gift-loop-image {
+  transform-origin: 50% 90%;
+  animation: regalo-tiembla 5.2s ease-in-out 1.6s infinite;
+}
+
+@keyframes regalo-tiembla {
+  0%, 82%, 100% { transform: none; }
+  85% { transform: rotate(-1.6deg) translateY(-1%); }
+  88% { transform: rotate(1.4deg) translateY(-1.4%); }
+  91% { transform: rotate(-1deg) translateY(-0.6%); }
+  94% { transform: rotate(0.5deg); }
+}
+
+.gift-image-section--guest-stay[data-guest-gift-state="revealed"] .guest-gift-loop-float {
+  animation-play-state: paused;
+}
+
+.gift-image-section--guest-stay[data-guest-gift-state="revealed"] .guest-gift-loop-bubble {
+  opacity: 0;
+  transform: translate3d(0, -12px, 0);
+}
+
+/* Luz dorada que sale del interior. */
+.regalo-resplandor {
+  position: absolute;
+  left: 17%;
+  width: 56%;
+  top: 48%;
+  height: 30%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 216, 120, 0.95) 0%, rgba(255, 190, 80, 0.5) 40%, rgba(255, 170, 60, 0) 72%);
+  mix-blend-mode: screen;
+  filter: blur(4px);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 600ms ease, transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.regalo-resplandor::after {
+  content: "";
+  position: absolute;
+  left: 32%;
+  right: 32%;
+  bottom: 45%;
+  height: 210%;
+  border-radius: 50% 50% 0 0;
+  background: linear-gradient(to top, rgba(255, 222, 150, 0.6), rgba(255, 222, 150, 0));
+  filter: blur(8px);
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+  transition: transform 1100ms cubic-bezier(0.22, 1, 0.36, 1) 150ms;
+}
+
+.gift-image-section--guest-stay[data-guest-gift-state="open"] .regalo-resplandor,
+.gift-image-section--guest-stay[data-guest-gift-state="revealed"] .regalo-resplandor {
+  opacity: 1;
+  transform: scale(1);
+  animation: regalo-luz 2.6s ease-in-out 900ms infinite;
+}
+
+.gift-image-section--guest-stay[data-guest-gift-state="open"] .regalo-resplandor::after,
+.gift-image-section--guest-stay[data-guest-gift-state="revealed"] .regalo-resplandor::after {
+  transform: scaleY(1);
+}
+
+.gift-image-section--guest-stay.is-key-taken .regalo-resplandor {
+  opacity: 0.55;
+}
+
+@keyframes regalo-luz {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+/* La llave solo se ve por encima del borde delantero de la caja: así parece salir de dentro. */
+.regalo-llave-boca {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 52.4%, 0% 70.3%);
+  pointer-events: none;
+}
+
+.regalo-llave {
+  position: absolute;
+  left: 27%;
+  top: 64%;
+  width: 36%;
+  height: auto;
+  filter: drop-shadow(0 6px 10px rgba(80, 50, 10, 0.35)) brightness(1.05);
+  transition:
+    transform var(--llave-sube-duracion, 1100ms) cubic-bezier(0.2, 0.8, 0.25, 1),
+    opacity 250ms ease;
+}
+
+/* Sube hasta la boca iluminada de la caja (sin tapar el texto de la tapa) y crece un poco. */
+.gift-image-section--guest-stay.is-key-up .regalo-llave {
+  transform: translateY(-108%) rotate(-6deg) scale(1.08);
+}
+
+.gift-image-section--guest-stay.is-key-taken .regalo-llave {
+  opacity: 0;
+}
+
+/* ---------- Ventana de revelación ---------- */
+.llave-revelacion {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.llave-revelacion[hidden] {
+  display: none;
+}
+
+.llave-revelacion-fondo {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 246, 225, 0.97), rgba(246, 241, 232, 0.97) 62%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+
+.llave-revelacion.is-open .llave-revelacion-fondo {
+  opacity: 1;
+}
+
+.llave-revelacion-cerrar {
+  position: fixed;
+  top: max(0.8rem, env(safe-area-inset-top));
+  right: max(0.8rem, env(safe-area-inset-right));
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(139, 115, 72, 0.4);
+  border-radius: 50%;
+  background: rgba(255, 252, 246, 0.9);
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #5a4322;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 300ms ease 500ms;
+}
+
+.llave-revelacion.is-open .llave-revelacion-cerrar {
+  opacity: 1;
+}
+
+.llave-revelacion-contenido {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(92vw, 420px);
+  text-align: center;
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+
+/* Destello dorado detrás de la llave. */
+.llave-revelacion-contenido::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 150%;
+  aspect-ratio: 1.4;
+  transform: translate(-50%, -32%);
+  background: radial-gradient(ellipse at center, rgba(255, 210, 120, 0.42), rgba(255, 210, 120, 0) 62%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 700ms ease 200ms;
+}
+
+.llave-revelacion.is-open .llave-revelacion-contenido::before {
+  opacity: 1;
+}
+
+.llave-revelacion.is-closing .llave-revelacion-contenido {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.llave-revelacion-llave {
+  position: relative;
+  width: min(76vw, 330px);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  filter: drop-shadow(0 16px 24px rgba(90, 60, 10, 0.35));
+  touch-action: manipulation;
+}
+
+.llave-revelacion-llave:focus-visible {
+  outline: 3px solid #7a1f23;
+  outline-offset: 8px;
+  border-radius: 12px;
+}
+
+.llave-flota {
+  position: relative;
+  display: block;
+  transform-origin: 30% 50%;
+  animation: llave-flota 3.4s ease-in-out infinite;
+}
+
+.llave-flota img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Brillo que recorre el metal (recortado con la forma de la llave). */
+.llave-brillo {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: url("assets/gallery/llave-regalo.webp") center / 100% 100% no-repeat;
+  mask: url("assets/gallery/llave-regalo.webp") center / 100% 100% no-repeat;
+  background: linear-gradient(105deg, rgba(255, 255, 240, 0) 38%, rgba(255, 255, 240, 0.85) 50%, rgba(255, 255, 240, 0) 62%);
+  background-size: 260% 100%;
+  background-position: 120% 0;
+  animation: llave-brillo 3.2s ease-in-out 0.9s infinite;
+  pointer-events: none;
+}
+
+@keyframes llave-flota {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-6px) rotate(-1deg); }
+}
+
+@keyframes llave-brillo {
+  0% { background-position: 120% 0; }
+  45%, 100% { background-position: -20% 0; }
+}
+
+/* Al tocarla, la llave gira sobre su eje como en una cerradura. */
+.llave-revelacion.is-turning .llave-flota {
+  animation: llave-gira 650ms cubic-bezier(0.5, 0, 0.5, 1) forwards;
+}
+
+@keyframes llave-gira {
+  0% { transform: perspective(700px) rotateX(0deg) scale(1); }
+  65% { transform: perspective(700px) rotateX(200deg) scale(1.06); }
+  100% { transform: perspective(700px) rotateX(180deg) scale(1.08); }
+}
+
+/* Cordel y etiqueta de cartón. */
+.llave-cordel {
+  display: block;
+  width: 1.5px;
+  height: 1.6rem;
+  margin-top: -0.4rem;
+  background: linear-gradient(#a07a3c, #8b6a34);
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: opacity 300ms ease 600ms, transform 400ms ease 600ms;
+}
+
+.llave-etiqueta {
+  position: relative;
+  width: min(84vw, 340px);
+  padding: 1.7rem 1.4rem 1.3rem;
+  border: 1px solid rgba(139, 100, 50, 0.35);
+  border-radius: 8px;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.5), transparent 60%),
+    #f3e3c3;
+  box-shadow: 0 16px 30px rgba(70, 45, 15, 0.16);
+  transform-origin: 50% 0;
+  opacity: 0;
+  transform: translateY(-10px) rotate(-6deg);
+}
+
+.llave-etiqueta::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: #f6f1e8;
+  box-shadow: inset 0 1px 2px rgba(70, 45, 15, 0.35), 0 0 0 2px rgba(160, 122, 60, 0.6);
+}
+
+.llave-revelacion.is-open .llave-cordel {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.llave-revelacion.is-open .llave-etiqueta {
+  animation: llave-etiqueta-entra 1100ms cubic-bezier(0.22, 1, 0.36, 1) 650ms forwards;
+}
+
+@keyframes llave-etiqueta-entra {
+  0% { opacity: 0; transform: translateY(-10px) rotate(-8deg); }
+  45% { opacity: 1; transform: translateY(0) rotate(3deg); }
+  70% { transform: rotate(-2.5deg); }
+  100% { opacity: 1; transform: rotate(-1.5deg); }
+}
+
+.llave-etiqueta p,
+.llave-etiqueta h2 {
+  margin: 0;
+}
+
+.llave-etiqueta-kicker {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.llave-etiqueta-titulo {
+  margin-top: 0.35rem !important;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 6vw, 1.7rem);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.llave-etiqueta-sub {
+  font-family: var(--font-script);
+  font-size: 1.9rem;
+  line-height: 1.1;
+  color: #7a1f23;
+}
+
+.llave-etiqueta-texto {
+  margin-top: 0.6rem !important;
+  font-family: var(--font-body-serif);
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: #4d3c27;
+}
+
+.llave-revelacion-pista {
+  margin: 1.2rem 0 0;
+  font-family: var(--font-body-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: #6b5a44;
+  opacity: 0;
+  transition: opacity 500ms ease 1500ms;
+}
+
+.llave-revelacion.is-open .llave-revelacion-pista {
+  opacity: 1;
+  animation: llave-pista 2.4s ease-in-out 2s infinite;
+}
+
+.llave-revelacion-pista::before {
+  content: "✦ ";
+  color: var(--gold-strong);
+}
+
+@keyframes llave-pista {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Detalles de la estancia, en texto legible. */
+.estancia-lista {
+  margin: 0.4rem 0 1.2rem;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-body-serif);
+  font-size: 1.08rem;
+  line-height: 1.5;
+  color: #4d3c27;
+}
+
+.estancia-lista li {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(167, 139, 90, 0.22);
+}
+
+.estancia-lista li:last-child {
+  border-bottom: 0;
+}
+
+.estancia-lista strong {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+#estanciaTitulo:focus {
+  outline: none;
+}
+
+/* =====================================================================
+   ARREGLOS DE USO EN EL MÓVIL
+   ===================================================================== */
+
+/* Botón de música (abajo a la derecha). */
+.musica-boton {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + clamp(0.75rem, 2vw, 1rem));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(0.75rem, 2vw, 1rem));
+  z-index: 88;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid rgba(139, 115, 72, 0.4);
+  border-radius: 50%;
+  background: rgba(252, 248, 241, 0.94);
+  box-shadow: 0 8px 18px rgba(42, 34, 24, 0.14);
+  color: var(--gold);
+  cursor: pointer;
+  transition: transform 300ms ease, opacity 300ms ease;
+}
+
+.musica-boton[hidden] {
+  display: none;
+}
+
+.musica-icono {
+  width: 22px;
+  height: 22px;
+}
+
+.musica-icono--off,
+.musica-boton.is-muted .musica-icono--on {
+  display: none;
+}
+
+.musica-boton.is-muted .musica-icono--off {
+  display: block;
+}
+
+.musica-boton:focus-visible {
+  outline: 3px solid #7a1f23;
+  outline-offset: 3px;
+}
+
+/* Los botones flotantes se apartan al bajar para no tapar el contenido. */
+.burger-nav {
+  transition: transform 300ms ease, opacity 300ms ease;
+}
+
+body.is-floating-hidden .burger-nav:not(.is-open),
+body.is-floating-hidden .musica-boton {
+  transform: translateY(170%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Etiquetas de la cuenta atrás legibles (antes 8 px). */
+#countdownSection .count-card small {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+}
+
+/* Enlace "Cómo llegar" de la ficha con zona táctil suficiente. */
+.key-fact-sub a {
+  display: inline-block;
+  padding: 0.6rem 0.2rem;
+  margin: -0.6rem 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-image-section--guest-stay[data-guest-gift-state="idle"] .guest-gift-loop-image,
+  .llave-flota,
+  .llave-brillo,
+  .llave-revelacion.is-open .llave-revelacion-pista,
+  .gift-image-section--guest-stay[data-guest-gift-state="revealed"] .regalo-resplandor {
+    animation: none;
+  }
+
+  .llave-revelacion.is-open .llave-etiqueta {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .llave-revelacion.is-turning .llave-flota {
+    animation: none;
+  }
+}
+
+/* =========================================================
+   FINAL DEL REGALO: la habitación con la llave sobre la cama
+   La caja desaparece y queda la foto de la habitación, que abre
+   la visita virtual. AJUSTA la posición de la llave en
+   .estancia-llave (left / top / width, en % de la foto).
+   ========================================================= */
+#regalo-invitados[hidden],
+#alojamiento[hidden] {
+  display: none !important;
+}
+
+#alojamiento.palace-discovery-section {
+  margin-top: clamp(1.5rem, 5vw, 3rem);
+}
+
+.estancia-card {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: stretch;
+  box-shadow: 0 18px 40px rgba(60, 40, 15, 0.12);
+}
+
+.estancia-foto {
+  position: relative;
+  display: block;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.estancia-foto > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.estancia-foto:hover > img,
+.estancia-foto:focus-visible > img {
+  transform: scale(1.03);
+}
+
+.estancia-foto:focus-visible {
+  outline: 2px solid var(--gold-strong, #a78b5a);
+  outline-offset: -6px;
+}
+
+/* Luz cálida sobre la cama, donde descansa la llave */
+.estancia-foto-velo {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 50% 24% at 38% 72%, rgba(255, 214, 140, 0.42), transparent 72%),
+    linear-gradient(to top, rgba(30, 18, 6, 0.28), transparent 42%);
+  pointer-events: none;
+}
+
+.estancia-llave {
+  position: absolute;
+  left: 5%;
+  top: 61%;
+  width: 66%;
+  transform: rotate(-9deg);
+  transform-origin: 30% 50%;
+  filter:
+    drop-shadow(0 10px 8px rgba(40, 24, 6, 0.45))
+    drop-shadow(0 0 16px rgba(255, 205, 120, 0.6));
+  animation: estancia-llave-reposo 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.estancia-llave img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.estancia-tour-sello {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgba(167, 139, 90, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.9);
+  box-shadow: 0 6px 16px rgba(30, 18, 6, 0.18);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6e1f2a;
+}
+
+.estancia-tour-sello svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* Llegada: la llave cae girando sobre la cama y se asienta con un destello */
+.is-llave-llegada .estancia-llave {
+  animation:
+    estancia-llave-llega 1150ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    estancia-llave-reposo 4.2s ease-in-out 1150ms infinite;
+}
+
+.is-llave-llegada .estancia-foto-velo {
+  animation: estancia-velo-destello 1600ms ease-out both;
+}
+
+.is-llave-llegada .estancia-foto > img {
+  animation: estancia-foto-entra 1100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes estancia-llave-llega {
+  0% { opacity: 0; transform: translateY(-140%) rotate(-32deg) scale(1.55); }
+  55% { opacity: 1; transform: translateY(5%) rotate(-5deg) scale(0.97); }
+  78% { transform: translateY(-2%) rotate(-10deg) scale(1.01); }
+  100% { opacity: 1; transform: rotate(-9deg); }
+}
+
+@keyframes estancia-llave-reposo {
+  0%, 100% { transform: rotate(-9deg) translateY(0); }
+  50% { transform: rotate(-8deg) translateY(-3px); }
+}
+
+@keyframes estancia-velo-destello {
+  0% { opacity: 0; }
+  45% { opacity: 1; filter: brightness(1.6); }
+  100% { opacity: 1; filter: none; }
+}
+
+@keyframes estancia-foto-entra {
+  from { transform: scale(1.08); filter: brightness(0.85); }
+  to { transform: scale(1); filter: none; }
+}
+
+.estancia-repetir {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  margin: 1.1rem auto 0;
+  padding: 0.5rem 1rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--ink-muted, #6b5a45);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.estancia-repetir svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 900px) {
+  .estancia-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .estancia-llave,
+  .is-llave-llegada .estancia-llave,
+  .is-llave-llegada .estancia-foto-velo,
+  .is-llave-llegada .estancia-foto > img {
+    animation: none;
+  }
+}
+
+.estancia-card .actions-row .btn {
+  justify-content: center;
+  text-align: center;
+}
+
+/* =========================================================
+   REGALO PARA LOS NOVIOS: marco dorado con texto y destellos
+   El texto es real (no está dentro de la imagen). AJUSTA:
+   - tamaño del marco: .regalo-marco (width)
+   - hueco del texto: .regalo-marco-texto (inset, en % del marco)
+   - destellos: style="--x --y" en cada .regalo-chispa del HTML
+   ========================================================= */
+.regalo-marco {
+  position: relative;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  container-type: inline-size;
+  animation: wedding-gift-float 8.4s ease-in-out infinite;
+}
+
+.regalo-marco-img {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 18px 26px rgba(70, 48, 14, 0.22));
+}
+
+/* Papel cálido dentro del marco, con una luz dorada en el centro */
+.regalo-marco-fondo {
+  position: absolute;
+  z-index: 1;
+  inset: 11% 7.5% 12% 7.5%;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(255, 236, 190, 0.55), transparent 70%),
+    linear-gradient(180deg, #fdf8ee 0%, #f8efdd 100%);
+  box-shadow: inset 0 0 40px rgba(167, 139, 90, 0.18);
+}
+
+.regalo-marco-texto {
+  position: absolute;
+  z-index: 3;
+  inset: 19% 15% 27% 15%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3.4cqw;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body-serif, "Crimson Pro", serif);
+  font-style: italic;
+  font-size: clamp(0.86rem, 4.95cqw, 1.5rem);
+  line-height: 1.4;
+  color: #5a4228;
+}
+
+.regalo-marco-linea {
+  display: block;
+  text-wrap: balance;
+}
+
+.regalo-marco-adorno {
+  width: 38cqw;
+  height: auto;
+  color: #b08a4a;
+  flex: none;
+}
+
+/* Reflejo dorado que recorre el marco (recortado con la forma del marco) */
+.regalo-marco-reflejo {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  -webkit-mask: url("assets/gallery/marco-regalo-novios.webp") center / 100% 100% no-repeat;
+  mask: url("assets/gallery/marco-regalo-novios.webp") center / 100% 100% no-repeat;
+  background: linear-gradient(115deg, rgba(255, 252, 235, 0) 40%, rgba(255, 252, 235, 0.9) 50%, rgba(255, 252, 235, 0) 60%);
+  background-size: 300% 300%;
+  background-position: 110% 0;
+  mix-blend-mode: screen;
+  animation: regalo-reflejo 6s ease-in-out 1.2s infinite;
+  pointer-events: none;
+}
+
+@keyframes regalo-reflejo {
+  0% { background-position: 110% 0; }
+  40%, 100% { background-position: -10% 100%; }
+}
+
+/* Destellos en forma de estrella de cuatro puntas */
+.regalo-chispa {
+  position: absolute;
+  z-index: 5;
+  left: var(--x);
+  top: var(--y);
+  width: calc(7cqw * var(--s, 1));
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: radial-gradient(circle, #fffdf0 0 12%, rgba(255, 230, 160, 0.9) 22%, rgba(255, 210, 120, 0) 60%);
+  clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%);
+  filter: drop-shadow(0 0 4px rgba(255, 215, 130, 0.9));
+  opacity: 0;
+  scale: 0;
+  animation: regalo-chispa 4.4s ease-in-out var(--d, 0s) infinite;
+  pointer-events: none;
+}
+
+@keyframes regalo-chispa {
+  0%, 62%, 100% { opacity: 0; scale: 0; rotate: 0deg; }
+  72% { opacity: 1; scale: 1; rotate: 45deg; }
+  84% { opacity: 0.4; scale: 0.55; rotate: 90deg; }
+}
+
+/* Entrada al llegar: el marco aparece, se ilumina y el texto se escribe línea a línea */
+#regalos:not(.is-visible) .regalo-marco-texto > * {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+#regalos.is-visible .regalo-marco-texto > * {
+  animation: regalo-texto-entra 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#regalos.is-visible .regalo-marco-texto > :nth-child(2) { animation-delay: 250ms; }
+#regalos.is-visible .regalo-marco-texto > :nth-child(3) { animation-delay: 650ms; }
+#regalos.is-visible .regalo-marco-texto > :nth-child(4) { animation-delay: 1000ms; }
+
+#regalos.is-visible .regalo-marco-fondo {
+  animation: regalo-fondo-luz 1800ms ease-out both;
+}
+
+@keyframes regalo-texto-entra {
+  from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes regalo-fondo-luz {
+  0% { filter: brightness(1.18); }
+  100% { filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .regalo-marco,
+  .regalo-marco-reflejo,
+  .regalo-chispa,
+  #regalos.is-visible .regalo-marco-texto > *,
+  #regalos.is-visible .regalo-marco-fondo {
+    animation: none;
+  }
+
+  .regalo-chispa {
+    display: none;
+  }
+
+  #regalos .regalo-marco-texto > * {
+    opacity: 1;
+    transform: none;
+  }
+}

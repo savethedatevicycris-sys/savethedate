@@ -90,7 +90,7 @@ const weddingConfig = {
     },
     {
       question: "¿Hay dress code?",
-      answer: "Sí, elegante clásico. Recomendamos calzado cómodo para exteriores. Recordad que siempre tendréis disponible vuestra habitación."
+      answer: "Sí, elegante clásico. Os pedimos que evitéis los colores chillones, como el fucsia o los fosforitos. Recomendamos calzado cómodo para exteriores. Recordad que siempre tendréis disponible vuestra habitación."
     },
     {
       question: "¿Puedo ir con acompañante?",
@@ -198,7 +198,7 @@ const weddingConfig = {
     },
     {
       id: "photos",
-      image: "assets/gallery/cuidadora-ninos.png",
+      image: "assets/gallery/guarderia-ninos.webp",
       title: "GUARDERÍA NIÑOS 0-12 AÑOS",
       description: "Servicio gratuito de guardería de los niños durante la cena y durante la fiesta hasta las 04:00h.",
       price: "Servicio gratuito",
@@ -324,6 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupInviteMotion();
   setupInviteFlameAlignment();
   setupLoveStoryToggle();
+  setupStoryPolaroids();
   setupCopyButtons();
   setupForms();
   setupCalendarButton();
@@ -338,6 +339,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupTitleCardZoomReveal();
   setupGuestStayGiftLoop();
   setupGuestStayRoomDiscovery();
+  setupMusicToggle();
+  setupFloatingControlsAutoHide();
 });
 
 function hydrateStaticContent() {
@@ -806,250 +809,388 @@ function setupTitleCardFrameLoop() {
 }
 
 function setupGuestStayGiftLoop() {
+  /*
+    Regalo para los invitados: la caja se abre, sale luz dorada y la llave sube
+    desde dentro. Después vuela al centro de la pantalla con su etiqueta y, al
+    tocarla, gira y muestra los detalles de la estancia.
+    AJUSTA AQUÍ LOS TIEMPOS (ms).
+  */
+  const GIFT_TIMING = {
+    tapaAbre: 220,        // cambio a la caja con la tapa abierta
+    llaveSube: 650,       // empieza a subir la llave
+    llaveSubeDuracion: 1100,
+    vueloInicio: 1900,    // la llave vuela al centro con su etiqueta
+    vueloDuracion: 750,
+    giroLlave: 650,       // la llave gira como en una cerradura
+    cierre: 420
+  };
+
   const section = document.getElementById("regalo-invitados");
   const trigger = document.getElementById("guestStayGiftTrigger");
   const image = document.getElementById("guestStayGiftImage");
-  const frame = section?.querySelector(".guest-gift-loop-frame");
+  const boxKey = document.getElementById("regaloLlave");
+  const overlay = document.getElementById("llaveRevelacion");
+  const overlayKey = document.getElementById("llaveRevelacionLlave");
+
   if (!(section instanceof HTMLElement)
     || !(trigger instanceof HTMLButtonElement)
-    || !(image instanceof HTMLImageElement)
-    || !(frame instanceof HTMLElement)) {
+    || !(image instanceof HTMLImageElement)) {
     return;
   }
 
-  const { srcClosed, srcOpening, srcOpen } = trigger.dataset;
-  if (!srcClosed || !srcOpening || !srcOpen) {
-    return;
-  }
-
-  const sources = {
-    closed: srcClosed,
-    opening: srcOpening,
-    open: srcOpen
-  };
-  const openingFrameDelayMs = reducedMotionQuery.matches ? 0 : 180;
-  const openingFrameHoldMs = reducedMotionQuery.matches ? 260 : 520;
-  const openFrameHoldMs = 4000;
-  const returnDurationMs = reducedMotionQuery.matches ? 0 : 900;
-
-  Object.values(sources).forEach((url) => {
+  const { srcClosed, srcOpening } = trigger.dataset;
+  [srcClosed, srcOpening, boxKey?.getAttribute("src")].filter(Boolean).forEach((url) => {
     const asset = new Image();
     asset.decoding = "async";
     asset.src = url;
   });
 
-  let isPlaying = false;
-  let hasUnlockedRoomDiscovery = false;
-  let rafId = 0;
-  let timerIds = [];
-
-  const clearSequenceTimers = () => {
-    timerIds.forEach((timerId) => window.clearTimeout(timerId));
-    timerIds = [];
-
-    if (rafId) {
-      window.cancelAnimationFrame(rafId);
-      rafId = 0;
+  const reduced = () => reducedMotionQuery.matches;
+  const timers = [];
+  const queue = (callback, delay) => {
+    timers.push(window.setTimeout(callback, delay));
+  };
+  const clearTimers = () => {
+    while (timers.length) {
+      window.clearTimeout(timers.pop());
     }
   };
-
-  const queue = (callback, delay) => {
-    const timerId = window.setTimeout(() => {
-      timerIds = timerIds.filter((currentId) => currentId !== timerId);
-      callback();
-    }, delay);
-
-    timerIds.push(timerId);
-    return timerId;
-  };
-
   const setState = (state) => {
     section.dataset.guestGiftState = state;
   };
 
-  const resetZoomMetrics = () => {
-    section.style.setProperty("--guest-gift-zoom-x", "0px");
-    section.style.setProperty("--guest-gift-zoom-y", "0px");
-    section.style.setProperty("--guest-gift-zoom-scale", "1");
+  let hasUnlockedRoomDiscovery = false;
+  let isPlaying = false;
+  let lastFocus = null;
+
+  const unlockRoomDiscovery = () => {
+    if (hasUnlockedRoomDiscovery) {
+      return;
+    }
+    hasUnlockedRoomDiscovery = true;
+    window.dispatchEvent(new CustomEvent(GUEST_STAY_GIFT_OPENED_EVENT));
   };
 
-  const syncZoomMetrics = () => {
-    const rect = frame.getBoundingClientRect();
-    if (!rect.width || !rect.height) {
+  // ---------- Ventana de revelación ----------
+  const openOverlay = (withFlight) => {
+    if (!(overlay instanceof HTMLElement) || !(overlayKey instanceof HTMLElement)) {
+      unlockRoomDiscovery();
       return;
     }
 
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const targetCenterX = viewportWidth / 2;
-    const targetCenterY = viewportHeight * (viewportWidth < 720 ? 0.44 : 0.47);
-    const widthRatio = viewportWidth < 720 ? 1.06 : 0.86;
-    const minScale = viewportWidth < 720 ? 1.16 : 1.08;
-    const targetWidth = Math.min(viewportWidth * widthRatio, 900);
-    const scale = Math.max(minScale, Math.min(1.34, targetWidth / rect.width));
-    const currentCenterX = rect.left + (rect.width / 2);
-    const currentCenterY = rect.top + (rect.height / 2);
+    lastFocus = document.activeElement;
+    overlay.hidden = false;
+    overlay.classList.remove("is-turning", "is-closing");
+    document.body.classList.add("is-modal-open");
 
-    section.style.setProperty("--guest-gift-zoom-x", `${Math.round(targetCenterX - currentCenterX)}px`);
-    section.style.setProperty("--guest-gift-zoom-y", `${Math.round(targetCenterY - currentCenterY)}px`);
-    section.style.setProperty("--guest-gift-zoom-scale", scale.toFixed(3));
+    // Vuelo: la llave parte del punto exacto donde está en la caja (técnica FLIP).
+    if (withFlight && boxKey instanceof HTMLElement && !reduced()) {
+      const from = boxKey.getBoundingClientRect();
+      const to = overlayKey.getBoundingClientRect();
+      if (from.width && to.width) {
+        const dx = (from.left + from.width / 2) - (to.left + to.width / 2);
+        const dy = (from.top + from.height / 2) - (to.top + to.height / 2);
+        const scale = from.width / to.width;
+        overlayKey.style.transition = "none";
+        overlayKey.style.transform = `translate(${dx}px, ${dy}px) scale(${scale}) rotate(-8deg)`;
+        void overlayKey.offsetWidth;
+        overlayKey.style.transition = `transform ${GIFT_TIMING.vueloDuracion}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+        overlayKey.style.transform = "";
+      }
+    }
+
+    requestAnimationFrame(() => {
+      overlay.classList.add("is-open");
+      section.classList.add("is-key-taken");
+    });
+
+    unlockRoomDiscovery();
+    window.setTimeout(() => overlayKey.focus({ preventScroll: true }), withFlight ? GIFT_TIMING.vueloDuracion : 50);
   };
 
-  const finishSequence = () => {
-    clearSequenceTimers();
-    resetZoomMetrics();
-    image.src = sources.open;
-    trigger.disabled = true;
-    setState("open");
+  const closeOverlay = () => {
+    if (!(overlay instanceof HTMLElement) || overlay.hidden) {
+      return;
+    }
+
+    overlay.classList.add("is-closing");
+    overlay.classList.remove("is-open");
+
+    window.setTimeout(() => {
+      overlay.hidden = true;
+      overlay.classList.remove("is-closing", "is-turning");
+      if (overlayKey instanceof HTMLElement) {
+        overlayKey.style.transition = "";
+        overlayKey.style.transform = "";
+      }
+      document.body.classList.remove("is-modal-open");
+
+      // Se cierre como se cierre, el regalo ya está abierto: mostramos la habitación.
+      if (!showRoom(true) && lastFocus instanceof HTMLElement) {
+        lastFocus.focus({ preventScroll: true });
+      }
+    }, GIFT_TIMING.cierre);
+  };
+
+  // ---------- La habitación con la llave encima ----------
+  const stay = document.getElementById("alojamiento");
+  const stayHeading = document.getElementById("estanciaTitulo");
+  const replayButton = document.getElementById("estanciaRepetir");
+  const giftMenuLinks = [...document.querySelectorAll('a[href="#regalo-invitados"]')];
+
+  // La caja desaparece y en su lugar queda la habitación con la llave sobre la cama.
+  const showRoom = (withLanding) => {
+    if (!(stay instanceof HTMLElement)) {
+      return false;
+    }
+    section.hidden = true;
+    stay.hidden = false;
+    stay.classList.add("is-visible");
+    giftMenuLinks.forEach((link) => link.setAttribute("href", "#alojamiento"));
+
+    stay.classList.remove("is-llave-llegada");
+    if (withLanding && !reduced()) {
+      void stay.offsetWidth;
+      stay.classList.add("is-llave-llegada");
+    }
+
+    requestAnimationFrame(() => {
+      stay.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+      if (stayHeading instanceof HTMLElement) {
+        stayHeading.focus({ preventScroll: true });
+      }
+    });
+    return true;
+  };
+
+  // Vuelve a dejar la caja cerrada para repetir la experiencia.
+  const resetGift = () => {
+    clearTimers();
     isPlaying = false;
+    if (stay instanceof HTMLElement) {
+      stay.hidden = true;
+      stay.classList.remove("is-llave-llegada");
+    }
+    section.hidden = false;
+    section.classList.remove("is-key-up", "is-key-taken");
+    if (srcClosed) {
+      image.src = srcClosed;
+    }
+    setState("idle");
+    trigger.removeAttribute("aria-busy");
+    trigger.setAttribute("aria-label", "Abrir el regalo para los invitados");
+    giftMenuLinks.forEach((link) => link.setAttribute("href", "#regalo-invitados"));
+    section.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "center" });
+    trigger.focus({ preventScroll: true });
   };
 
+  if (replayButton instanceof HTMLButtonElement) {
+    replayButton.addEventListener("click", resetGift);
+  }
+
+  // ---------- Secuencia de la caja ----------
   const playSequence = () => {
-    if (isPlaying || section.dataset.guestGiftState === "open") {
+    if (isPlaying) {
+      return;
+    }
+
+    // Si ya se abrió antes, vuelve a mostrar la llave directamente.
+    if (section.dataset.guestGiftState === "revealed") {
+      openOverlay(false);
       return;
     }
 
     isPlaying = true;
-    clearSequenceTimers();
-    resetZoomMetrics();
-    trigger.disabled = true;
-    image.src = sources.closed;
+    clearTimers();
+    trigger.setAttribute("aria-busy", "true");
+    section.style.setProperty("--llave-sube-duracion", `${GIFT_TIMING.llaveSubeDuracion}ms`);
+
+    if (reduced()) {
+      image.src = srcOpening || image.src;
+      setState("revealed");
+      section.classList.add("is-key-up");
+      isPlaying = false;
+      trigger.removeAttribute("aria-busy");
+      openOverlay(false);
+      return;
+    }
+
     setState("opening");
-
     queue(() => {
-      image.src = sources.opening;
-    }, openingFrameDelayMs);
-
-    const openRevealAtMs = openingFrameDelayMs + openingFrameHoldMs;
-    queue(() => {
-      image.src = sources.open;
-
-      if (!hasUnlockedRoomDiscovery) {
-        hasUnlockedRoomDiscovery = true;
-        window.dispatchEvent(new CustomEvent(GUEST_STAY_GIFT_OPENED_EVENT));
+      if (srcOpening) {
+        image.src = srcOpening;
       }
+      setState("open");
+    }, GIFT_TIMING.tapaAbre);
 
-      if (reducedMotionQuery.matches) {
-        setState("zoom");
-        return;
-      }
-
-      rafId = window.requestAnimationFrame(() => {
-        syncZoomMetrics();
-        rafId = window.requestAnimationFrame(() => {
-          setState("zoom");
-          rafId = 0;
-        });
-      });
-    }, openRevealAtMs);
-
-    const returnAtMs = openRevealAtMs + openFrameHoldMs;
     queue(() => {
-      setState("returning");
-      resetZoomMetrics();
-    }, returnAtMs);
+      section.classList.add("is-key-up");
+    }, GIFT_TIMING.llaveSube);
 
-    queue(finishSequence, returnAtMs + returnDurationMs);
+    queue(() => {
+      setState("revealed");
+      isPlaying = false;
+      trigger.removeAttribute("aria-busy");
+      trigger.setAttribute("aria-label", "Volver a ver la llave del regalo");
+      openOverlay(true);
+    }, GIFT_TIMING.vueloInicio);
   };
 
   trigger.addEventListener("click", playSequence);
 
-  const handleResize = () => {
-    if (section.dataset.guestGiftState === "zoom") {
-      syncZoomMetrics();
-    }
-  };
+  if (overlay instanceof HTMLElement) {
+    overlay.querySelectorAll("[data-llave-cerrar]").forEach((node) => {
+      node.addEventListener("click", () => closeOverlay(false));
+    });
 
-  window.addEventListener("resize", handleResize, { passive: true });
-  window.addEventListener("pagehide", () => {
-    clearSequenceTimers();
-    window.removeEventListener("resize", handleResize);
-  }, { once: true });
+    overlay.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeOverlay(false);
+        return;
+      }
+      // Mantiene el foco dentro de la ventana.
+      if (event.key === "Tab") {
+        const focusables = [...overlay.querySelectorAll("button")].filter((node) => !node.hidden);
+        if (!focusables.length) {
+          return;
+        }
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    });
+  }
+
+  if (overlayKey instanceof HTMLElement) {
+    overlayKey.addEventListener("click", () => {
+      if (!(overlay instanceof HTMLElement) || overlay.classList.contains("is-turning")) {
+        return;
+      }
+      overlay.classList.add("is-turning");
+      window.setTimeout(() => closeOverlay(true), reduced() ? 0 : GIFT_TIMING.giroLlave);
+    });
+  }
+
+  window.addEventListener("pagehide", clearTimers, { once: true });
 }
 
-function setupGuestStayRoomDiscovery() {
-  const section = document.getElementById("alojamiento");
-  const details = document.getElementById("palaceDiscoveryDetails");
-  const summary = document.getElementById("palaceDiscoverySummary");
-  const toggleButton = document.getElementById("palaceDiscoveryToggle");
-  const content = document.getElementById("palaceDiscoveryContent");
-  const label = document.getElementById("palaceDiscoveryLabel");
-  const palaceCard = section?.querySelector(".palace-card");
-
-  if (
-    !(section instanceof HTMLElement)
-    || !(details instanceof HTMLElement)
-    || !(summary instanceof HTMLElement)
-    || !(toggleButton instanceof HTMLButtonElement)
-    || !(content instanceof HTMLElement)
-    || !(label instanceof HTMLElement)
-  ) {
+function setupMusicToggle() {
+  // Botón flotante para activar o silenciar la música de fondo (se recuerda la elección).
+  const button = document.getElementById("musicaBoton");
+  const ambientAudio = document.getElementById("ambientAudio");
+  if (!(button instanceof HTMLButtonElement) || !(ambientAudio instanceof HTMLAudioElement)) {
     return;
   }
 
-  const collapsedLabel = label.dataset.collapsedLabel || label.textContent?.trim() || "";
-  const expandedLabel = label.dataset.expandedLabel || collapsedLabel;
-  const unlockDelayMs = reducedMotionQuery.matches ? 0 : 260;
-  let isUnlocked = !section.hidden;
-  let isExpanded = false;
-  let unlockTimerId = 0;
+  const STORAGE_KEY = "wedding.musicMuted";
+  let storedMuted = false;
+  try {
+    storedMuted = window.localStorage.getItem(STORAGE_KEY) === "true";
+  } catch {
+    storedMuted = false;
+  }
+  ambientAudio.muted = storedMuted;
 
-  const syncState = () => {
-    const expanded = isExpanded;
-    details.classList.toggle("is-open", expanded);
-    summary.dataset.expanded = String(expanded);
-    toggleButton.setAttribute("aria-expanded", String(expanded));
-    toggleButton.setAttribute("aria-label", expanded ? expandedLabel : collapsedLabel);
-    label.textContent = expanded ? expandedLabel : collapsedLabel;
-    content.setAttribute("aria-hidden", String(!expanded));
-    content.inert = !expanded;
+  const isSilent = () => ambientAudio.muted || ambientAudio.paused;
+  const sync = () => {
+    const silent = isSilent();
+    button.classList.toggle("is-muted", silent);
+    button.setAttribute("aria-pressed", String(silent));
+    button.setAttribute("aria-label", silent ? "Activar la música" : "Silenciar la música");
+  };
 
-    if (!isUnlocked) {
-      section.dataset.roomDiscoveryState = "locked";
+  button.addEventListener("click", () => {
+    if (isSilent()) {
+      ambientAudio.muted = false;
+      if (ambientAudio.paused) {
+        window.dispatchEvent(new CustomEvent(AMBIENT_UNLOCK_EVENT));
+        window.dispatchEvent(new CustomEvent(AMBIENT_START_EVENT));
+      }
+    } else {
+      ambientAudio.muted = true;
+    }
+    try {
+      window.localStorage.setItem(STORAGE_KEY, String(ambientAudio.muted));
+    } catch {
+      // Sin almacenamiento disponible: la elección dura solo esta visita.
+    }
+    sync();
+  });
+
+  ["play", "pause", "volumechange"].forEach((name) => ambientAudio.addEventListener(name, sync));
+
+  // Se muestra cuando la persona ya está dentro de la web (tras el sobre).
+  const showWhenInside = () => {
+    if (!document.body.classList.contains("is-locked")) {
+      button.hidden = false;
+      sync();
+      return true;
+    }
+    return false;
+  };
+  if (!showWhenInside()) {
+    const observer = new MutationObserver(() => {
+      if (showWhenInside()) {
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  }
+}
+
+function setupFloatingControlsAutoHide() {
+  // En el móvil, los botones flotantes se apartan al bajar para no tapar el contenido
+  // y vuelven en cuanto la persona sube un poco.
+  let lastY = window.scrollY;
+  let ticking = false;
+
+  const update = () => {
+    ticking = false;
+    const y = window.scrollY;
+    const delta = y - lastY;
+    if (Math.abs(delta) < 6) {
       return;
     }
+    const menuOpen = document.getElementById("burgerNav")?.classList.contains("is-open");
+    document.body.classList.toggle("is-floating-hidden", delta > 0 && y > 200 && !menuOpen);
+    lastY = y;
+  };
 
-    section.dataset.roomDiscoveryState = expanded ? "expanded" : "ready";
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      ticking = true;
+      window.requestAnimationFrame(update);
+    }
+  }, { passive: true });
+}
 
-    if (expanded && palaceCard instanceof HTMLElement) {
+function setupGuestStayRoomDiscovery() {
+  // El alojamiento está oculto hasta abrir el regalo. Al abrirlo se muestra completo,
+  // sin desplegable: lo enseña setupGuestStayGiftLoop cuando se cierra la llave.
+  const section = document.getElementById("alojamiento");
+  const details = document.getElementById("palaceDiscoveryDetails");
+  const palaceCard = section?.querySelector(".palace-card");
+
+  if (!(section instanceof HTMLElement) || !(details instanceof HTMLElement)) {
+    return;
+  }
+
+  const unlock = () => {
+    section.dataset.roomDiscoveryState = "expanded";
+    details.classList.add("is-open");
+    if (palaceCard instanceof HTMLElement) {
       palaceCard.classList.add("is-visible");
     }
   };
 
-  const toggle = () => {
-    if (!isUnlocked) {
-      return;
-    }
-
-    isExpanded = !isExpanded;
-    syncState();
-  };
-
-  const unlock = () => {
-    if (isUnlocked) {
-      return;
-    }
-
-    isUnlocked = true;
-    window.clearTimeout(unlockTimerId);
-    unlockTimerId = window.setTimeout(() => {
-      section.hidden = false;
-      section.classList.add("is-visible");
-      syncState();
-    }, unlockDelayMs);
-  };
-
-  details.classList.remove("is-open");
-  isExpanded = false;
-  syncState();
-
-  toggleButton.addEventListener("click", toggle);
   window.addEventListener(GUEST_STAY_GIFT_OPENED_EVENT, unlock);
-  window.addEventListener("pagehide", () => {
-    window.clearTimeout(unlockTimerId);
-    toggleButton.removeEventListener("click", toggle);
-    window.removeEventListener(GUEST_STAY_GIFT_OPENED_EVENT, unlock);
-  }, { once: true });
 }
 
 function setupTitleCardZoomReveal() {
@@ -1269,8 +1410,8 @@ function getPetalSpawnDelay() {
   const isMobile = window.matchMedia("(max-width: 768px)").matches
     || window.matchMedia("(pointer: coarse)").matches;
 
-  const minDelay = isMobile ? 700 : 350;
-  const maxDelay = isMobile ? 1200 : 700;
+  const minDelay = isMobile ? 1600 : 1400;
+  const maxDelay = isMobile ? 2800 : 2600;
   return Math.round(randomBetween(minDelay, maxDelay));
 }
 
@@ -1283,13 +1424,13 @@ function createPetal(overlay) {
   petal.className = "petal";
   petal.style.backgroundImage = `url("${PETAL_IMAGE_PATH}")`;
 
-  const size = randomBetween(38, 120);
+  const size = randomBetween(16, 34);
   const aspectRatio = randomBetween(0.84, 1.2);
   const duration = randomBetween(8, 17);
   const drift = randomBetween(34, 185) * (Math.random() < 0.5 ? -1 : 1);
   const rotationStart = randomBetween(0, 360);
   const rotationDelta = randomBetween(-170, 170);
-  const opacity = randomBetween(0.48, 0.95);
+  const opacity = randomBetween(0.35, 0.7);
   const blur = randomBetween(0, 0.35);
   const startX = randomBetween(-40, window.innerWidth + 40);
 
@@ -1968,82 +2109,68 @@ function setupBurgerMenu() {
 }
 
 function setupLetterGate(gateEffects) {
-  const gate = document.getElementById("letterGate");
-  const mainContent = document.getElementById("mainContent");
-  const gateEnvelope = document.getElementById("gateEnvelope");
-  const gateSealHitArea = document.getElementById("gateSealHitArea");
-  const gateSealHint = document.getElementById("gateSealHint");
-  const audioHintTrigger = document.getElementById("audioHint");
-  const paperAudioElement = document.getElementById("paperAudio");
-  const gateTooltip = document.getElementById("gateSealTooltip") || document.getElementById("gateEnvelopeTooltip");
-
-  const frameMap = {
-    closed: gateEnvelope ? gateEnvelope.querySelector('[data-frame="closed"]') : null,
-    opening: gateEnvelope ? gateEnvelope.querySelector('[data-frame="opening"]') : null,
-    open: gateEnvelope ? gateEnvelope.querySelector('[data-frame="open"]') : null
+  /*
+    Intro: apertura del sobre por capas.
+    AJUSTA AQUÍ LOS TIEMPOS (en milisegundos, desde que se pulsa el sello o el botón).
+  */
+  const INTRO_TIMING = {
+    selloDuracion: 400,       // 1. El sello se inclina y se desvanece (0-400 ms)
+    solapaInicio: 250,        // 2. La solapa empieza a abrirse...
+    solapaDuracion: 850,      //    ...y termina a los 1.100 ms
+    cartaInicio: 950,         // 3. La carta empieza a salir...
+    cartaDuracion: 900,       //    ...y termina a los 1.850 ms
+    lecturaDuracion: 750,     // 4. La carta se adelanta y se centra para leerla
+    textoVisible: 1500,       //    Tiempo con el texto visible antes de pasar a la web
+    reducidoFundido: 400,     // Movimiento reducido: fundido simple
+    precargaMaxima: 6000      // Espera máxima de las imágenes antes de usar la alternativa
   };
 
-  const paperCrinkleAudio = createAudioResource(paperAudioElement);
-  const sequenceTimers = [];
-  let isOpening = false;
-  const phase1Duration = 1000;
-  const phase2Duration = 1000;
-  const phase3HoldDuration = 4000;
-  let hintAppearTimer = 0;
+  const gate = document.getElementById("letterGate");
+  const mainContent = document.getElementById("mainContent");
+  const sobre = document.getElementById("sobre");
+  const carta = document.getElementById("sobreCarta");
+  const sealButton = document.getElementById("introSeal");
+  const openButton = document.getElementById("introOpen");
+  const skipButton = document.getElementById("introSkip");
+  const statusNode = document.getElementById("introStatus");
+  const paperAudioElement = document.getElementById("paperAudio");
 
   if (!mainContent) {
     return;
   }
 
-  if (!gate || !gateEnvelope || !(gateSealHitArea instanceof HTMLElement) || !frameMap.closed || !frameMap.opening || !frameMap.open) {
+  const showMainWithoutIntro = () => {
+    hydrateDeferredMediaSources(document.getElementById("heroVideo"));
+    if (gate) {
+      gate.hidden = true;
+    }
     mainContent.hidden = false;
     mainContent.classList.add("is-visible");
-    document.body.classList.remove("is-locked");
-    document.body.classList.remove("is-gate-active", "is-gate-cursor-active");
+    document.body.classList.remove("is-locked", "is-gate-active", "is-gate-cursor-active");
     requestAnimationFrame(() => {
       window.dispatchEvent(new CustomEvent(HERO_VIDEO_START_EVENT));
     });
+  };
+
+  if (!gate || !sobre || !carta || !(sealButton instanceof HTMLButtonElement) || !(openButton instanceof HTMLButtonElement)) {
+    showMainWithoutIntro();
     return;
   }
 
-  if (gateTooltip instanceof HTMLElement) {
-    gateSealHitArea.setAttribute("aria-describedby", gateTooltip.id);
+  if (gateEffects && typeof gateEffects.destroy === "function") {
+    gateEffects.destroy();
   }
 
-  showGateFrame("closed", frameMap);
-  scheduleGateFramePreload([frameMap.opening, frameMap.open]);
+  document.body.classList.add("is-gate-active");
 
-  const isGateVisible = () => {
-    if (gate.hidden || gate.classList.contains("is-opened")) {
-      return false;
-    }
+  const paperCrinkleAudio = createAudioResource(paperAudioElement);
+  const sequenceTimers = [];
+  let isOpening = false;
+  let isFinished = false;
 
-    const gateStyles = window.getComputedStyle(gate);
-    return gateStyles.display !== "none" && gateStyles.visibility !== "hidden";
+  const schedule = (callback, delay) => {
+    sequenceTimers.push(window.setTimeout(callback, delay));
   };
-
-  const syncGateStateClass = () => {
-    const gateActive = document.body.classList.contains("is-locked") && isGateVisible();
-    document.body.classList.toggle("is-gate-active", gateActive);
-  };
-
-  const gateStateObserver = new MutationObserver(() => {
-    syncGateStateClass();
-  });
-  gateStateObserver.observe(gate, {
-    attributes: true,
-    attributeFilter: ["class", "style", "hidden"]
-  });
-
-  const bodyStateObserver = new MutationObserver(() => {
-    syncGateStateClass();
-  });
-  bodyStateObserver.observe(document.body, {
-    attributes: true,
-    attributeFilter: ["class"]
-  });
-
-  syncGateStateClass();
 
   const clearSequenceTimers = () => {
     while (sequenceTimers.length) {
@@ -2051,56 +2178,13 @@ function setupLetterGate(gateEffects) {
     }
   };
 
-  const schedule = (callback, delay) => {
-    const timerId = window.setTimeout(callback, delay);
-    sequenceTimers.push(timerId);
-  };
-
-  const clearHintAppearTimer = () => {
-    if (!hintAppearTimer) {
-      return;
-    }
-
-    window.clearTimeout(hintAppearTimer);
-    hintAppearTimer = 0;
-  };
-
-  const hideGateHint = () => {
-    clearHintAppearTimer();
-
-    if (gateSealHint instanceof HTMLElement) {
-      gateSealHint.classList.remove("is-visible");
-      gateSealHint.setAttribute("aria-hidden", "true");
-    }
-
-    if (gateTooltip instanceof HTMLElement) {
-      gateTooltip.setAttribute("aria-hidden", "true");
+  const announce = (message) => {
+    if (statusNode) {
+      statusNode.textContent = message;
     }
   };
 
-  const showGateHint = () => {
-    if (!(gateSealHint instanceof HTMLElement)) {
-      return;
-    }
-
-    if (isOpening || gate.classList.contains("is-opened")) {
-      return;
-    }
-
-    gateSealHint.classList.add("is-visible");
-    gateSealHint.setAttribute("aria-hidden", "false");
-    if (gateTooltip instanceof HTMLElement) {
-      gateTooltip.setAttribute("aria-hidden", "false");
-    }
-  };
-
-  const scheduleHintAppearance = () => {
-    clearHintAppearTimer();
-    hintAppearTimer = window.setTimeout(() => {
-      showGateHint();
-    }, 1000);
-  };
-
+  // ---------- Audio existente: pergamino al abrir y después música de fondo ----------
   appState.audioEnabled = paperCrinkleAudio.available;
 
   const paperPeakVolume = 0.46;
@@ -2110,12 +2194,10 @@ function setupLetterGate(gateEffects) {
   let gateAudioTransitionDone = false;
 
   const clearPaperFade = () => {
-    if (!paperFadeRafId) {
-      return;
+    if (paperFadeRafId) {
+      window.cancelAnimationFrame(paperFadeRafId);
+      paperFadeRafId = 0;
     }
-
-    window.cancelAnimationFrame(paperFadeRafId);
-    paperFadeRafId = 0;
   };
 
   const fadePaperVolume = (target, durationMs, onComplete) => {
@@ -2131,7 +2213,6 @@ function setupLetterGate(gateEffects) {
     const startVolume = clamp(audio.volume || 0, 0, 1);
     const delta = clampedTarget - startVolume;
     const safeDuration = Math.max(1, Number(durationMs) || 1);
-
     clearPaperFade();
 
     if (Math.abs(delta) < 0.001) {
@@ -2146,24 +2227,21 @@ function setupLetterGate(gateEffects) {
     const step = (timestamp) => {
       const progress = clamp((timestamp - startTime) / safeDuration, 0, 1);
       audio.volume = clamp(startVolume + (delta * progress), 0, 1);
-
       if (progress < 1) {
         paperFadeRafId = window.requestAnimationFrame(step);
         return;
       }
-
       paperFadeRafId = 0;
       if (typeof onComplete === "function") {
         onComplete();
       }
     };
-
     paperFadeRafId = window.requestAnimationFrame(step);
   };
 
-  function startPaperAudio() {
+  const startPaperAudio = () => {
     if (!appState.audioEnabled || !(paperCrinkleAudio.audio instanceof HTMLAudioElement)) {
-      return Promise.resolve(false);
+      return;
     }
 
     const paperAudio = paperCrinkleAudio.audio;
@@ -2173,33 +2251,24 @@ function setupLetterGate(gateEffects) {
     paperAudio.currentTime = 0;
     paperAudio.volume = 0;
 
-    return paperAudio.play()
-      .then(() => {
-        fadePaperVolume(paperPeakVolume, paperFadeInMs);
-        paperCrinkleAudio.available = true;
-        return true;
-      })
-      .catch((err) => {
+    // Si el navegador bloquea el sonido, la animación sigue igualmente.
+    paperAudio.play()
+      .then(() => fadePaperVolume(paperPeakVolume, paperFadeInMs))
+      .catch(() => {
         appState.audioEnabled = false;
-        paperCrinkleAudio.available = false;
-        console.warn("[paperAudio] No se pudo reproducir el audio del pergamino.", err);
-        return false;
       });
-  }
+  };
 
-  function stopPaperAudioAndStartAmbient() {
+  const stopPaperAudioAndStartAmbient = () => {
     if (gateAudioTransitionDone) {
       return;
     }
-
     gateAudioTransitionDone = true;
 
     const startAmbient = () => {
-      if (!appState.audioEnabled) {
-        return;
+      if (appState.audioEnabled) {
+        window.dispatchEvent(new CustomEvent(AMBIENT_START_EVENT));
       }
-
-      window.dispatchEvent(new CustomEvent(AMBIENT_START_EVENT));
     };
 
     if (!(paperCrinkleAudio.audio instanceof HTMLAudioElement)) {
@@ -2220,129 +2289,196 @@ function setupLetterGate(gateEffects) {
       finishPaper();
       return;
     }
-
     fadePaperVolume(0, paperFadeOutMs, finishPaper);
-  }
-
-  const resetEnvelopePhases = () => {
-    gateEnvelope.classList.remove("is-phase-1", "is-phase-2", "is-phase-3");
   };
 
-  const openInvitationSequence = () => {
-    if (isOpening || gate.classList.contains("is-opened")) {
+  // ---------- Paso al contenido principal ----------
+  const finishIntro = () => {
+    if (isFinished) {
+      return;
+    }
+    isFinished = true;
+    clearSequenceTimers();
+    gate.dataset.introState = "done";
+    revealMainContent(gate, mainContent, {
+      onGateHidden: () => {
+        stopPaperAudioAndStartAmbient();
+        gate.hidden = true;
+      }
+    });
+  };
+
+  // ---------- Carta: calcula cuánto agrandarla y moverla para leerla centrada ----------
+  const applyReadingPosition = () => {
+    const rect = carta.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
       return;
     }
 
-    preloadGateFrames(resolveGateFrameSources([frameMap.opening, frameMap.open]));
-    hideGateHint();
+    const viewportW = document.documentElement.clientWidth || window.innerWidth;
+    const viewportH = window.innerHeight;
+    const maxReadingWidth = Math.min(viewportW * 0.88, 480); // ancho máximo de la carta al leerla
+    const scale = Math.max(1, Math.min(maxReadingWidth / rect.width, (viewportH * 0.84) / rect.height));
+    const deltaX = (viewportW / 2) - (rect.left + rect.width / 2);
+    const deltaY = (viewportH / 2) - (rect.top + rect.height / 2);
+
+    carta.style.setProperty("--lift-x", `${deltaX.toFixed(1)}px`);
+    carta.style.setProperty("--lift-y", `${deltaY.toFixed(1)}px`);
+    carta.style.setProperty("--lift-s", scale.toFixed(3));
+  };
+
+  const setControlsDisabled = (disabled) => {
+    sealButton.disabled = disabled;
+    openButton.disabled = disabled;
+  };
+
+  // ---------- Secuencia de apertura (una sola vez por activación) ----------
+  const openInvitationSequence = (event) => {
+    if (event) {
+      event.preventDefault();
+    }
+    if (isOpening || isFinished || gate.dataset.introState === "loading") {
+      return;
+    }
+
     isOpening = true;
+    setControlsDisabled(true);
+    hydrateDeferredMediaSources(document.getElementById("heroVideo"));
     appState.gateIsOpening = true;
     appState.heroVideoGateClickAt = performance.now();
     gateAudioTransitionDone = false;
     window.dispatchEvent(new CustomEvent(AMBIENT_UNLOCK_EVENT));
-    clearSequenceTimers();
+    startPaperAudio();
+    announce("Abriendo la invitación.");
 
-    resetEnvelopePhases();
-    gateEnvelope.style.setProperty("--frame-duration", `${phase1Duration}ms`);
-    gateEnvelope.classList.add("is-phase-1");
-
-    if (gateEffects && typeof gateEffects.destroy === "function") {
-      gateEffects.destroy();
-    }
-
+    const wasFallback = gate.dataset.introState === "fallback";
     gate.classList.add("is-opening");
+    gate.dataset.introState = "opening";
 
-    if (appState.audioEnabled) {
-      startPaperAudio().then((isAvailable) => {
-        if (!isAvailable) {
-          appState.audioEnabled = false;
-        }
-      });
+    if (wasFallback || sobre.offsetParent === null) {
+      schedule(finishIntro, INTRO_TIMING.reducidoFundido);
+      return;
     }
 
+    sobre.style.setProperty("--t-sello", `${INTRO_TIMING.selloDuracion}ms`);
+    sobre.style.setProperty("--d-solapa", `${INTRO_TIMING.solapaInicio}ms`);
+    sobre.style.setProperty("--t-solapa", `${INTRO_TIMING.solapaDuracion}ms`);
+    sobre.style.setProperty("--t-carta", `${INTRO_TIMING.cartaDuracion}ms`);
+    sobre.style.setProperty("--t-lectura", `${INTRO_TIMING.lecturaDuracion}ms`);
+
+    // Movimiento reducido: sin giros ni desplazamientos, solo un fundido breve.
     if (reducedMotionQuery.matches) {
-      showGateFrame("open", frameMap);
-      resetEnvelopePhases();
-      window.setTimeout(() => {
-        clearSequenceTimers();
-        revealMainContent(gate, mainContent, {
-          onGateHidden: stopPaperAudioAndStartAmbient
-        });
-      }, 180);
-      return;
-    }
-
-    // Fase 1: 1000ms (closed -> opening).
-    showGateFrame("opening", frameMap);
-
-    // Fase 2: 1000ms (opening -> open).
-    schedule(() => {
-      gateEnvelope.style.setProperty("--frame-duration", `${phase2Duration}ms`);
-      gateEnvelope.classList.remove("is-phase-1");
-      gateEnvelope.classList.add("is-phase-2");
-      showGateFrame("open", frameMap);
-    }, phase1Duration);
-
-    // Fase 3: imagen abierta visible durante 4000ms.
-    schedule(() => {
-      gateEnvelope.classList.remove("is-phase-2");
-      gateEnvelope.classList.add("is-phase-3");
-    }, phase1Duration + phase2Duration);
-
-    // Salida del gate tras la secuencia completa.
-    schedule(() => {
-      clearSequenceTimers();
-      revealMainContent(gate, mainContent, {
-        onGateHidden: stopPaperAudioAndStartAmbient
+      gate.classList.add("is-reduced");
+      carta.style.opacity = "0";
+      sobre.classList.add("is-letter-rising");
+      void carta.offsetWidth;
+      applyReadingPosition();
+      sobre.classList.add("is-letter-free");
+      gate.classList.add("is-letter-free");
+      requestAnimationFrame(() => {
+        carta.style.opacity = "1";
       });
-    }, phase1Duration + phase2Duration + phase3HoldDuration);
-  };
-
-  const onSealHitAreaKeydown = (event) => {
-    if (event.key !== "Enter" && event.key !== " ") {
+      announce("Con gran ilusión, os invitamos a celebrar nuestra boda. Víctor y Cristina, 26 de junio de 2027.");
+      schedule(finishIntro, INTRO_TIMING.reducidoFundido + INTRO_TIMING.textoVisible);
       return;
     }
 
-    event.preventDefault();
-    openInvitationSequence();
+    // 1 y 2. Sello y solapa (animaciones CSS con sus retardos).
+    sobre.classList.add("is-opening");
+
+    // 3. La carta sale del bolsillo.
+    schedule(() => {
+      sobre.classList.add("is-letter-rising");
+    }, INTRO_TIMING.cartaInicio);
+
+    // 4. La carta se adelanta y se centra; el sobre se retira.
+    const readingStart = INTRO_TIMING.cartaInicio + INTRO_TIMING.cartaDuracion;
+    schedule(() => {
+      applyReadingPosition();
+      sobre.classList.add("is-letter-free");
+      gate.classList.add("is-letter-free");
+      announce("Con gran ilusión, os invitamos a celebrar nuestra boda. Víctor y Cristina, 26 de junio de 2027.");
+    }, readingStart);
+
+    // Texto visible y paso a la web.
+    schedule(finishIntro, readingStart + INTRO_TIMING.lecturaDuracion + INTRO_TIMING.textoVisible);
   };
 
-  const onSealHitAreaClick = (event) => {
-    event.preventDefault();
-    openInvitationSequence();
-  };
-
-  const onSealHitAreaPointerUp = (event) => {
-    event.preventDefault();
-    openInvitationSequence();
-  };
-
-  if (gateSealHitArea.dataset.gateListenersAttached !== "true") {
-    gateSealHitArea.addEventListener("click", onSealHitAreaClick);
-    gateSealHitArea.addEventListener("pointerup", onSealHitAreaPointerUp);
-    gateSealHitArea.addEventListener("keydown", onSealHitAreaKeydown);
-
-    if (audioHintTrigger instanceof HTMLElement) {
-      audioHintTrigger.addEventListener("click", openInvitationSequence);
+  const skipIntro = () => {
+    if (isFinished) {
+      return;
     }
+    window.dispatchEvent(new CustomEvent(AMBIENT_UNLOCK_EVENT));
+    hydrateDeferredMediaSources(document.getElementById("heroVideo"));
+    finishIntro();
+  };
 
-    window.addEventListener("pagehide", () => {
-      clearHintAppearTimer();
-      hideGateHint();
-      clearPaperFade();
-      if (paperCrinkleAudio.audio instanceof HTMLAudioElement) {
-        paperCrinkleAudio.audio.pause();
-        paperCrinkleAudio.audio.currentTime = 0;
-        paperCrinkleAudio.audio.volume = 0;
-      }
-      gateStateObserver.disconnect();
-      bodyStateObserver.disconnect();
-    }, { once: true });
-
-    gateSealHitArea.dataset.gateListenersAttached = "true";
+  sealButton.addEventListener("click", openInvitationSequence);
+  openButton.addEventListener("click", openInvitationSequence);
+  if (skipButton instanceof HTMLButtonElement) {
+    skipButton.addEventListener("click", skipIntro);
   }
 
-  scheduleHintAppearance();
+  window.addEventListener("resize", () => {
+    if (sobre.classList.contains("is-letter-free") && !isFinished) {
+      carta.style.transition = "none";
+      carta.style.setProperty("--lift-x", "0px");
+      carta.style.setProperty("--lift-y", "0px");
+      carta.style.setProperty("--lift-s", "1");
+      void carta.offsetWidth;
+      applyReadingPosition();
+      requestAnimationFrame(() => {
+        carta.style.transition = "";
+      });
+    }
+  }, { passive: true });
+
+  window.addEventListener("pagehide", () => {
+    clearSequenceTimers();
+    clearPaperFade();
+    if (paperCrinkleAudio.audio instanceof HTMLAudioElement) {
+      paperCrinkleAudio.audio.pause();
+      paperCrinkleAudio.audio.currentTime = 0;
+    }
+  }, { once: true });
+
+  // ---------- Precarga: las piezas deben estar decodificadas antes de permitir abrir ----------
+  const enableOpening = (state) => {
+    gate.dataset.introState = state;
+    openButton.textContent = "Abrir invitación";
+    setControlsDisabled(false);
+    if (state === "fallback") {
+      sealButton.disabled = true;
+    }
+  };
+
+  const pieces = [...gate.querySelectorAll(".sobre img")];
+  const decodePiece = (image) => new Promise((resolve, reject) => {
+    const done = () => {
+      if (image.naturalWidth > 0) {
+        (typeof image.decode === "function" ? image.decode() : Promise.resolve()).then(resolve, resolve);
+      } else {
+        reject(new Error(`No se pudo cargar ${image.currentSrc || image.src}`));
+      }
+    };
+    if (image.complete) {
+      done();
+      return;
+    }
+    image.addEventListener("load", done, { once: true });
+    image.addEventListener("error", () => reject(new Error(`No se pudo cargar ${image.src}`)), { once: true });
+  });
+
+  const timeout = new Promise((_, reject) => {
+    window.setTimeout(() => reject(new Error("La precarga de la intro ha tardado demasiado")), INTRO_TIMING.precargaMaxima);
+  });
+
+  Promise.race([Promise.all(pieces.map(decodePiece)), timeout])
+    .then(() => enableOpening("ready"))
+    .catch((error) => {
+      console.warn("[intro]", error.message);
+      enableOpening("fallback");
+    });
 }
 
 function showGateFrame(name, frameMap) {
@@ -4588,35 +4724,14 @@ function setupInviteFlameAlignment() {
     return;
   }
 
+  // Posición de cada llama pintada en la imagen (px sobre 1024x1536).
+  // x: centro de la llama · base: donde nace sobre la mecha · height: alto de la llama.
+  // AJUSTE FINO: si una llama no cae justo sobre su vela, cambia aquí sus valores.
   const flameAnchors = [
-    {
-      selector: ".invite-flame--one",
-      fallbackX: 73,
-      fallbackY: 890,
-      size: 1.74,
-      search: { x0: 34, y0: 820, x1: 112, y1: 930 }
-    },
-    {
-      selector: ".invite-flame--two",
-      fallbackX: 140,
-      fallbackY: 958,
-      size: 1.58,
-      search: { x0: 98, y0: 900, x1: 190, y1: 1018 }
-    },
-    {
-      selector: ".invite-flame--three",
-      fallbackX: 954,
-      fallbackY: 924,
-      size: 1.72,
-      search: { x0: 916, y0: 850, x1: 1004, y1: 972 }
-    },
-    {
-      selector: ".invite-flame--four",
-      fallbackX: 886,
-      fallbackY: 1020,
-      size: 1.58,
-      search: { x0: 844, y0: 948, x1: 934, y1: 1078 }
-    }
+    { selector: ".invite-flame--one", x: 72, base: 936, height: 56 },
+    { selector: ".invite-flame--two", x: 140, base: 1064, height: 58 },
+    { selector: ".invite-flame--three", x: 955, base: 974, height: 57 },
+    { selector: ".invite-flame--four", x: 887, base: 1064, height: 58 }
   ];
 
   const flames = flameAnchors
@@ -4632,7 +4747,6 @@ function setupInviteFlameAlignment() {
 
   let resizeObserver = null;
   let rafId = 0;
-  let detectedAnchors = null;
 
   const toPx = (value) => {
     const parsed = Number.parseFloat(String(value || "").trim());
@@ -4664,114 +4778,6 @@ function setupInviteFlameAlignment() {
     layer.style.borderRadius = imageStyles.borderRadius;
   };
 
-  const detectAnchorFromImage = (imageData, width, height, anchor) => {
-    const x0 = clamp(anchor.search.x0, 0, width - 1);
-    const y0 = clamp(anchor.search.y0, 0, height - 1);
-    const x1 = clamp(anchor.search.x1, x0 + 1, width);
-    const y1 = clamp(anchor.search.y1, y0 + 1, height);
-    const candidates = [];
-
-    for (let y = y0; y < y1; y += 1) {
-      for (let x = x0; x < x1; x += 1) {
-        const index = (y * width + x) * 4;
-        const r = imageData[index];
-        const g = imageData[index + 1];
-        const b = imageData[index + 2];
-        const maxChannel = Math.max(r, g, b);
-        const minChannel = Math.min(r, g, b);
-        const saturation = maxChannel - minChannel;
-        const luminance = (r + g + b) / 3;
-
-        // Flame core: warm and bright, but still allows near-white pixels.
-        if (
-          luminance < 150
-          || r < 185
-          || g < 135
-          || r < g
-          || g < b - 12
-          || saturation < 10
-          || saturation > 150
-        ) {
-          continue;
-        }
-
-        const warmth = r + g - b * 0.65;
-        const distance = Math.hypot(x - anchor.fallbackX, y - anchor.fallbackY);
-        let score = luminance * 1.35 + warmth * 0.92 + (255 - saturation) * 0.55 - distance * 3.1;
-
-        if (r > 240 && g > 200) {
-          score += 85;
-        }
-
-        if (r > 235 && g > 235) {
-          score += 40;
-        }
-
-        if (score > 0) {
-          candidates.push({ x, y, score });
-        }
-      }
-    }
-
-    if (!candidates.length) {
-      return { x: anchor.fallbackX, y: anchor.fallbackY };
-    }
-
-    candidates.sort((a, b) => b.score - a.score);
-
-    // Anchor the effect to the brightest flame core instead of the full glow.
-    // Using the centroid of the glow drifts the overlay downward on small screens.
-    return {
-      x: candidates[0].x,
-      y: candidates[0].y
-    };
-  };
-
-  const getDetectedAnchors = () => {
-    if (detectedAnchors) {
-      return detectedAnchors;
-    }
-
-    const naturalWidth = img.naturalWidth;
-    const naturalHeight = img.naturalHeight;
-    if (!naturalWidth || !naturalHeight || img.dataset.isPlaceholder === "true") {
-      return null;
-    }
-
-    const canvas = document.createElement("canvas");
-    canvas.width = naturalWidth;
-    canvas.height = naturalHeight;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) {
-      return null;
-    }
-
-    context.drawImage(img, 0, 0, naturalWidth, naturalHeight);
-    let imageData;
-
-    try {
-      imageData = context.getImageData(0, 0, naturalWidth, naturalHeight).data;
-    } catch {
-      detectedAnchors = flames.map((flame) => ({
-        x: flame.fallbackX,
-        y: flame.fallbackY,
-        size: flame.size
-      }));
-      return detectedAnchors;
-    }
-
-    detectedAnchors = flames.map((flame) => {
-      const point = detectAnchorFromImage(imageData, naturalWidth, naturalHeight, flame);
-      return {
-        x: point.x,
-        y: point.y,
-        size: flame.size
-      };
-    });
-
-    return detectedAnchors;
-  };
-
   const syncFlameAnchors = () => {
     if (img.dataset.isPlaceholder === "true") {
       return;
@@ -4783,18 +4789,14 @@ function setupInviteFlameAlignment() {
       return;
     }
 
-    const anchorPoints = getDetectedAnchors();
+    // Las coordenadas se midieron sobre la imagen de 1024 px; se escalan si cambia su tamaño.
+    const scaleX = naturalWidth / 1024;
+    const scaleY = naturalHeight / 1536;
 
-    flames.forEach((flame, index) => {
-      const detected = anchorPoints ? anchorPoints[index] : null;
-      const sourceX = detected ? detected.x : flame.fallbackX;
-      const sourceY = detected ? detected.y : flame.fallbackY;
-      const sourceSize = detected ? detected.size : flame.size;
-      const xPercent = (sourceX / naturalWidth) * 100;
-      const yPercent = (sourceY / naturalHeight) * 100;
-      flame.node.style.setProperty("--x", `${xPercent.toFixed(4)}%`);
-      flame.node.style.setProperty("--y", `${yPercent.toFixed(4)}%`);
-      flame.node.style.setProperty("--size", `${sourceSize}%`);
+    flames.forEach((flame) => {
+      flame.node.style.setProperty("--x", `${((flame.x * scaleX) / naturalWidth * 100).toFixed(4)}%`);
+      flame.node.style.setProperty("--y", `${((flame.base * scaleY) / naturalHeight * 100).toFixed(4)}%`);
+      flame.node.style.setProperty("--h", `${((flame.height * scaleY) / naturalHeight * 100).toFixed(4)}%`);
     });
   };
 
@@ -4813,7 +4815,6 @@ function setupInviteFlameAlignment() {
   };
 
   const onImageLoad = () => {
-    detectedAnchors = null;
     scheduleRefresh();
   };
 
@@ -5434,6 +5435,12 @@ function setAnimatedCount(node, value) {
 }
 
 function renderSchedule() {
+  const programDays = document.getElementById("programDays");
+  if (programDays) {
+    renderProgramDays(programDays);
+    return;
+  }
+
   const carouselTrack = document.getElementById("programCarouselTrack");
   if (carouselTrack) {
     renderProgramCarousel(carouselTrack, getScheduleDisplayItems());
@@ -5590,6 +5597,69 @@ function renderProgramCarousel(container, items) {
     `;
 
     container.appendChild(article);
+  });
+}
+
+function renderProgramDays(container) {
+  const days = [
+    { name: "Sábado", date: "26 · junio · 2027", items: weddingConfig.schedule?.saturday || [] },
+    { name: "Domingo", date: "27 · junio · 2027", items: weddingConfig.schedule?.sunday || [] }
+  ];
+
+  container.innerHTML = days.map((day, dayIndex) => `
+    <article class="program-day">
+      <header class="program-day-head">
+        <p class="program-day-name">${escapeHtml(day.name)}</p>
+        <p class="program-day-date">${escapeHtml(day.date)}</p>
+      </header>
+      <ul class="program-day-list">
+        ${day.items.map((item, index) => {
+          const visual = getScheduleVisualMeta(item);
+          const isStar = String(item.title || "").trim().toLowerCase() === "ceremonia";
+          const panelId = `programMoment-${dayIndex}-${index}`;
+          return `
+            <li class="program-moment${isStar ? " is-star" : ""}">
+              <button class="program-moment-toggle" type="button" aria-expanded="false" aria-controls="${panelId}">
+                <span class="program-moment-icon"><img src="${visual.src}" alt="" loading="lazy"></span>
+                <span class="program-moment-head">
+                  <span class="program-moment-time">${escapeHtml(item.time || "")}</span>
+                  <span class="program-moment-title">${escapeHtml(item.title || "")}</span>
+                </span>
+                <span class="program-moment-plus" aria-hidden="true"></span>
+              </button>
+              <div class="program-moment-panel" id="${panelId}" hidden>
+                <img class="program-moment-illustration" src="${visual.src}" alt="${escapeHtml(visual.alt)}" loading="lazy">
+                <p>${escapeHtml(item.description || "")}</p>
+              </div>
+            </li>`;
+        }).join("")}
+      </ul>
+    </article>
+  `).join("");
+
+  container.addEventListener("click", (event) => {
+    const toggle = event.target instanceof Element ? event.target.closest(".program-moment-toggle") : null;
+    if (!(toggle instanceof HTMLButtonElement)) {
+      return;
+    }
+    const panel = document.getElementById(toggle.getAttribute("aria-controls") || "");
+    const willOpen = toggle.getAttribute("aria-expanded") !== "true";
+    toggle.setAttribute("aria-expanded", String(willOpen));
+    toggle.closest(".program-moment")?.classList.toggle("is-open", willOpen);
+    if (panel) {
+      panel.hidden = !willOpen;
+    }
+  });
+}
+
+function setupStoryPolaroids() {
+  const polaroids = [...document.querySelectorAll(".story-polaroid")];
+  polaroids.forEach((polaroid) => {
+    polaroid.addEventListener("click", () => {
+      const flipped = polaroid.getAttribute("aria-pressed") !== "true";
+      polaroid.setAttribute("aria-pressed", String(flipped));
+      polaroid.classList.toggle("is-flipped", flipped);
+    });
   });
 }
 
@@ -6752,6 +6822,14 @@ function setupForms() {
 
   setEmbedAndLink("rsvpEmbed", embedUrl, "rsvpViewLink", rsvpUrls.viewUrl);
 
+  if (rsvpUrls.viewUrl && rsvpUrls.viewUrl !== "#rsvp") {
+    document.querySelectorAll("a[data-rsvp-link]").forEach((link) => {
+      link.href = rsvpUrls.viewUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+    });
+  }
+
   if (rsvpStatus instanceof HTMLElement) {
     rsvpStatus.textContent = shouldEmbedForms ? rsvpUrls.message : "Abre el formulario en una pestaña nueva para completarlo desde el archivo local.";
     rsvpStatus.classList.toggle("is-link-only", rsvpUrls.mode === "link-only" || !shouldEmbedForms);
@@ -7014,8 +7092,8 @@ function setupScrollReveal() {
       });
     },
     {
-      threshold: 0.16,
-      rootMargin: "0px 0px -8% 0px"
+      threshold: 0.04,
+      rootMargin: "0px 0px 12% 0px"
     }
   );
 
